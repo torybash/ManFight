@@ -32,7 +32,7 @@ public class CameraControl : MonoBehaviour {
 	}
 
 	public void SetCameraPosition(Vector3 pos){
-		Debug.Log("SetCameraPosition! - pos: " + pos);
+//		Debug.Log("SetCameraPosition! - pos: " + pos);
 
 		Vector3 newPos = pos;
 		newPos.z = -10;

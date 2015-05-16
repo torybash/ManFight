@@ -46,7 +46,7 @@ public class LevelCreatorControl : MonoBehaviour {
 					//Create prefab
 					Transform spTrans = (Transform) Instantiate(tileSpritePrefab, LevelControl.LevelToWorldPos(x, y), Quaternion.identity);
 
-					Debug.Log("spTrans: " + spTrans + ", lvlCont: " +  lvlCont + ", spTyp: " + spTyp);
+//					Debug.Log("spTrans: " + spTrans + ", lvlCont: " +  lvlCont + ", spTyp: " + spTyp);
 					spTrans.SetParent(lvlCont.transform);
 
 					//Set sprite
