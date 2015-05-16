@@ -4,17 +4,26 @@ using System.Collections;
 public class CameraControl : MonoBehaviour {
 
 	[SerializeField] float camMoveSpeed;
+	[SerializeField] float camZoomSpeed;
+	[SerializeField] float minCamZoom;
+	[SerializeField] float maxCamZoom;
 
 	Vector2 cameraMoveInput = new Vector2();
 
+	float initCamSize;
+
+	
 	// Use this for initialization
 	void Start () {
 	
+		initCamSize = Camera.main.orthographicSize;
 	}
 	
 	// Update is called once per frame
 	void Update () {
 		CameraMovement();
+
+		CameraZoom();
 	}
 
 
@@ -38,6 +47,18 @@ public class CameraControl : MonoBehaviour {
 
 
 		Camera.main.transform.Translate(cameraMoveInput * camMoveSpeed * Time.deltaTime);
+	}
+
+
+	void CameraZoom(){
+		float camZoomInput = Input.GetAxis("Mouse ScrollWheel");
+
+		float newCamSize = Camera.main.orthographicSize + camZoomInput * camZoomSpeed * Time.deltaTime;
+
+		if (newCamSize < minCamZoom) newCamSize = minCamZoom;
+		if (newCamSize > maxCamZoom) newCamSize = maxCamZoom;
+
+		Camera.main.orthographicSize = newCamSize;
 	}
 
 }

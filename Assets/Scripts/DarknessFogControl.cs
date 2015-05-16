@@ -14,7 +14,7 @@ public class DarknessFogControl : MonoBehaviour {
 	byte[,] tilesExplored;
 	int w, h;
 
-	SpriteType[][] lvl;
+	MapTile[][] lvl;
 
 
 	void Awake(){
@@ -33,14 +33,14 @@ public class DarknessFogControl : MonoBehaviour {
 	}
 
 
-	public void InitFog(SpriteType[][] lvl){
+	public void InitFog(MapTile[][] lvl){
 		this.lvl = lvl;
 
 		w = lvl.Length; h = lvl[0].Length;
 		tilesExplored = new byte[w, h];
 		for (int x = 0; x < w; x++) {
 			for (int y = 0; y < h; y++) {
-				tilesExplored[x,y] = 0;
+				tilesExplored[x,y] = 1;
 			}
 		}
 	}
@@ -162,7 +162,8 @@ public class DarknessFogControl : MonoBehaviour {
 
 
 	bool IsBlockingVisibility(int x, int y){
-		if (lvl[x][y] == SpriteType.ROCK) return true;
+		if (x < 0 || y < 0 || x > lvl.Length || y > lvl[0].Length) return true;
+		if (lvl[x][y].sprites.Contains(SpriteType.ROCK)) return true;
 
 		return false;
 	}

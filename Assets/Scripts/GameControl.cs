@@ -4,11 +4,14 @@ using System.Collections.Generic;
 
 public class GameControl : MonoBehaviour {
 
+
 	LevelControl lvlCtrl;
 	CameraControl camCtrl;
 
 	NetworkManagerControl netManCtrl;
 	RobotCommandControl rCmdCtrl;
+	GameGUIControl guiCtrl;
+	PlayoutControl playCtrl;
 
 	int turn = 0;
 	float turnTimer = 0;
@@ -32,6 +35,7 @@ public class GameControl : MonoBehaviour {
 	void Awake () {
 		lvlCtrl = GetComponent<LevelControl>();
 		camCtrl = GetComponent<CameraControl>();
+		playCtrl = GetComponent<PlayoutControl>();
 
 		netManCtrl = GetComponent<NetworkManagerControl>();
 		rCmdCtrl = GetComponent<RobotCommandControl>();
@@ -39,13 +43,7 @@ public class GameControl : MonoBehaviour {
 
 	void Start(){
 		lvlCtrl.SpawnLevel();
-
-
-		camCtrl.InitCamera(lvlCtrl.width, lvlCtrl.height);
-//		camCtrl.SetCameraPosition();
-
-
-
+//		camCtrl.InitCamera(lvlCtrl.width, lvlCtrl.height);
 	}
 
 
@@ -57,62 +55,28 @@ public class GameControl : MonoBehaviour {
 		if (!netManCtrl.playersConnected) return;
 
 		if (playingOutCommands){
-			PlayingOutCommandsUpdate();
+			playoutTimer -= Time.fixedDeltaTime;
+			playCtrl.PlayingOutCommandsUpdate(playoutTimer, allPlayerRobotCommands, playerRobots);
 		}
 	}
-
-	//GENERAL
-
-	public void TurnStarted(){
-		rCmdCtrl.StartTurn();
-	}
-
+	
 
 	//SERVER
-
-	void PlayingOutCommandsUpdate(){
-		Debug.Log("PlayingOutCommandsUpdate - playoutTimer: " + playoutTimer);
-
-		playoutTimer -= Time.fixedDeltaTime;
-
-		int moveIdx = (int) ((playoutDuration - playoutTimer) * movesPerSec);
-
-
-		for (int i = 0; i < allPlayerRobotCommands.Length; i++) { //Fore player
-			List<RobotCommand> playerRobotCommands = allPlayerRobotCommands[i];
-			
-			foreach (RobotCommand robotCmd in playerRobotCommands) {
-				Debug.Log("robotCmd.robotID: "+ robotCmd.robotID);
-				Robot robot = playerRobots[i][robotCmd.robotID];
-				//				robot.PlayCommands(robotCmd);
-
-				if (robotCmd.turnCommands.Count > moveIdx){ //has a move for this move/time idx
-					Command cmd = robotCmd.turnCommands[moveIdx];
-					
-					robot.transform.Translate(Tools.CommandToVector(cmd) * movesPerSec * Time.fixedDeltaTime);
-				}
-//				
-
-
-
-			}
-			
-		}
-
-		if (playoutTimer < 0) playingOutCommands = false;
-	}
+	
 
 
 	void ApplyStartingPositions(){
-		for (int i = 0; i < netManCtrl.GetPlayers().Count; i++) {
-			StartPosition startPos = lvlCtrl.PollRandomStartingPos();
-			netManCtrl.GetPlayers()[i].ApplyStartingPosition (startPos);
+		for (int id = 0; id < netManCtrl.GetPlayers().Count; id++) {
+
+			Transform startPos = lvlCtrl.GetStartingPosition(id);
+			netManCtrl.GetPlayers()[id].ApplyStartingPosition (id, startPos);
 		}
 	}
 
 	void SpawnRobots(){
-		for (int i = 0; i < netManCtrl.GetPlayers().Count; i++) {
-			netManCtrl.SpawnRobotForPlayer(i);
+		for (int id = 0; id < netManCtrl.GetPlayers().Count; id++) {
+			
+			netManCtrl.SpawnRobotsForPlayer(id, 3);
 //			netManCtrl.GetPlayers()[i].SpawnRobot();
 		}
 	}
@@ -130,7 +94,7 @@ public class GameControl : MonoBehaviour {
 
 
 	void TurnEnded(){
-//		netManCtrl.PlayOutCommands();
+		netManCtrl.PlayOutCommands();
 	
 	
 		PlayOutCommands();
@@ -144,6 +108,11 @@ public class GameControl : MonoBehaviour {
 		playoutTimer = playoutDuration;
 	}
 
+	public void PlayedOutCommands()
+	{
+		playingOutCommands = false;
+		StartNextTurn();
+	}
 	
 	public void PlayersConnected(){
 
@@ -166,11 +135,12 @@ public class GameControl : MonoBehaviour {
 		ApplyStartingPositions();
 		SpawnRobots();
 
-		StartTurn();
+		StartNextTurn();
 	}
 
-	void StartTurn(){
-		netManCtrl.ToAllTurnStarted();
+	void StartNextTurn(){
+		turn++;
+		netManCtrl.ToAllTurnStarted(turn);
 	}
 
 
@@ -183,10 +153,26 @@ public class GameControl : MonoBehaviour {
 
 
 	public void AddPlayerRobot(Robot robot, string playerGUID){
-		Debug.Log("AddPlayerRobot - playerRobots: " + playerRobots + ", playerRobots.Length: " + playerRobots.Length + ", robot: "  + robot + ", robot.robotID: " + robot.robotID + ", playerGUID: "+ playerGUID);
-		int playerID = netManCtrl.netPlayerIDDict[playerGUID];
+		Debug.Log("AddPlayerRobot - playerRobots: " + playerRobots + ", playerRobots.Length: " + playerRobots.Length + ", robot: "  + robot + ", robot.robotID: " + robot.robotID);
+		int playerID = netManCtrl.playersGUIDToIDDict[playerGUID];
 		playerRobots[playerID].Add(robot.robotID, robot);
 
 	}
-	
+
+
+	public void PlayerRobotPlaced(string playerGUID, int roboID, int x, int y){
+		Debug.Log("PlayerRobotPlaced");
+		int playerID = netManCtrl.playersGUIDToIDDict[playerGUID];
+		Robot rob = playerRobots[playerID][roboID];
+		rob.SetPosition(x, y);
+	}
+
+
+
+
+
+
+
+
+
 }

@@ -1,21 +1,17 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scripts/DarknessFog.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scripts/NetworkManagerControl.cs">
     <Files>
-      <File FileName="Assets/Scripts/LevelControl.cs" Line="48" Column="11" />
-      <File FileName="Assets/Scripts/DarknessFogControl.cs" Line="40" Column="16" />
-      <File FileName="Assets/Scripts/DarknessFog.cs" Line="43" Column="52" />
-      <File FileName="Assets/Scripts/RobotCommandControl.cs" Line="105" Column="2" />
-      <File FileName="Assets/Scripts/GameControl.cs" Line="96" Column="4" />
-      <File FileName="Assets/Scripts/Robot.cs" Line="97" Column="1" />
-      <File FileName="Assets/Scripts/RobotCommand.cs" Line="1" Column="1" />
-      <File FileName="Assets/Scripts/GameServer.cs" Line="1" Column="1" />
-      <File FileName="Assets/Scripts/NetworkManagerControl.cs" Line="130" Column="21" />
-      <File FileName="Assets/Scripts/NetworkPlayerInfo.cs" Line="1" Column="1" />
       <File FileName="Assets/RobotStream.cs" Line="1" Column="1" />
-      <File FileName="Assets/RobotVision.cs" Line="25" Column="11" />
-      <File FileName="Assets/Scripts/GameGUIControl.cs" Line="1" Column="1" />
-      <File FileName="Assets/Scripts/StartPosition.cs" Line="1" Column="1" />
+      <File FileName="Assets/MenuGUIControl.cs" Line="1" Column="1" />
+      <File FileName="Assets/Scripts/RobotCommandControl.cs" Line="151" Column="2" />
+      <File FileName="Assets/Scripts/PathArrowControl.cs" Line="82" Column="33" />
+      <File FileName="Assets/Scripts/GameControl.cs" Line="113" Column="30" />
+      <File FileName="Assets/Scripts/CameraControl.cs" Line="1" Column="1" />
+      <File FileName="Assets/Scripts/RobotGhost.cs" Line="1" Column="1" />
+      <File FileName="Assets/PlayoutControl.cs" Line="33" Column="12" />
+      <File FileName="Assets/Scripts/RobotCommand.cs" Line="10" Column="58" />
+      <File FileName="Assets/Scripts/NetworkManagerControl.cs" Line="67" Column="4" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>

@@ -6,15 +6,18 @@ public class Robot : MonoBehaviour {
 
 	SpriteRenderer[] srs;
 
+	RobotVision robotVision;
+
 	public NetworkView netView;
 
-	bool hasMoved = false;
-	public int movesLeft = 0;
+//	public int movesLeft = 0;
 
 
 	public RobotCommand robotCommand;
 
 	public Vector2 ghostPosition = Vector2.zero;
+
+	public Color color;
 
 	//ROBOT VALUES
 	public int maxMoves = 15;
@@ -26,74 +29,92 @@ public class Robot : MonoBehaviour {
 
 	public int robotID = -1;
 
+	public RobotHeight robotHeight = RobotHeight.HIGH;
 
-	// Use this for initialization
+
+	RobotCommandControl rCmdCtrl;
+
+	bool isMine;
+
+	//Preperation
+	public bool needPlacing;
+	public float robotPrepTimer;
+	
 	void Awake () {
 		netView = GetComponent<NetworkView>();
-
 		srs = GetComponentsInChildren<SpriteRenderer>();
+		robotVision = GetComponent<RobotVision>();
 	}
-
-
 	
-	
-	// Update is called once per frame
-	void Update () {
-	
-		if (!netView.isMine) return;
-
-
-
-
-		 
-		//DEBUG OF DEATH
-//		if (Input.GetKeyDown(KeyCode.UpArrow)){
-//			transform.Translate(0, 1, 0);
-//		}else if (Input.GetKeyDown(KeyCode.DownArrow)){
-//			transform.Translate(0, -1, 0);
-//		}else if (Input.GetKeyDown(KeyCode.LeftArrow)){
-//			transform.Translate(-1, 0, 0);
-//		}else if (Input.GetKeyDown(KeyCode.RightArrow)){
-//			transform.Translate(1, 0, 0);
-//		}
-	}
-
-
-
-
 
 	//GENERAL
-	public void Init(int robotID, Color clr){
+	public void StartTurn(){
+//		movesLeft = maxMoves;
+		ghostPosition = transform.position;
+		robotCommand = new RobotCommand(robotID);
+	}	
+
+
+
+
+	//PLAYER
+	void Init(){
+		needPlacing = true;
+		
+		robotCommand = new RobotCommand(robotID);
+		ghostPosition = transform.position;		
+
+		rCmdCtrl = GameObject.Find("GameScripts").GetComponent<RobotCommandControl>();
+		rCmdCtrl.AddRobot(this);
+
+
+	}
+
+	public void Placed(){
+		needPlacing = false;
+		robotVision.Enabled(true);
+		ForceUpdateVisibility();
+	}
+
+	public void ForceUpdateVisibility(){
+		robotVision.ForceUpdateVisibility();
+	}
+
+	public void UpdatePositionToTime(float timer){
+
+	}
+
+	//SERVER
+	public void ServerInit(int robotID, Color clr, string ownerGUID){
 		this.robotID = robotID;
 		foreach (SpriteRenderer sr in srs) {
 			sr.color = clr;
 		}
-		netView.RPC("RPCInit", RPCMode.AllBuffered, robotID, clr.r, clr.g, clr.b);
-
-
+		netView.RPC("RPCInit", RPCMode.AllBuffered, robotID, clr.r, clr.g, clr.b, ownerGUID);
 	}
-
-	public void StartTurn(){
-		movesLeft = maxMoves;
-
-		robotCommand = new RobotCommand(robotID);
-
+	
+	public void SetPosition(int x, int y){
+		transform.position = Tools.AddHalf(new Vector2(x, y));
 		ghostPosition = transform.position;
 	}
 
-	
-	
 
 	//RPC
 	[RPC]
-	public void RPCInit(int robotID, float r, float g, float b){
-//		Debug.Log("ROBOT INIT - rgb: "+  r + ", " + g + ", " + b);
+	public void RPCInit(int robotID, float r, float g, float b, string ownerGUID){ 
+//		Debug.Log("RPCInit (Robot) - rgb: "+  r + ", " + g + ", " + b + ", robotID: " + robotID + ", ownerGUID: " + ownerGUID);
 		this.robotID = robotID;
 
+		color = new Color(r, g, b);
 		foreach (SpriteRenderer sr in srs) {
-			sr.color = new Color(r, g, b);
+			sr.color = color;
 		}
 
+		//IS MINE?
+		if (ownerGUID.Equals(Network.player.guid)){
+			isMine = true;
+			Init();
+		}
 
 
 //		if (!Network.isServer) return;
@@ -105,6 +126,13 @@ public class Robot : MonoBehaviour {
 
 	//Unity BUILT-IN
 	void OnNetworkInstantiate(NetworkMessageInfo info) {
+
+//		netManCtrl = GameObject.Find("GameScripts").GetComponent<NetworkManagerControl>();
+//
+//
+//		netManCtrl.ReceivedNetworkInstantiate(this);
+//
+//		Debug.Log("OnNetworkInstantiate - Robot  - sender: "  + info.sender.guid);
 //		if (!Network.isServer) return;
 
 //		GameControl gameCtrl = GameObject.Find("GameScripts").GetComponent<GameControl>();

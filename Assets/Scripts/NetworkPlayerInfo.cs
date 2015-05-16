@@ -10,9 +10,10 @@ public class NetworkPlayerInfo : MonoBehaviour {
 	NetworkManager netManager;
 	NetworkManagerControl netManCtrl;
 
-	public Color color;
+//	public Color color;
 	public Vector2 initPos;
 
+	public int playerID = -1;
 
 
 	public int robotIDIncr = 0;
@@ -20,7 +21,7 @@ public class NetworkPlayerInfo : MonoBehaviour {
 	void Awake () {
 		netView = GetComponent<NetworkView>();
 
-		netManager = GameObject.Find("GameScripts").GetComponent<NetworkManager>();
+		netManager = GameObject.Find("MenuScripts").GetComponent<NetworkManager>();
 
 		DontDestroyOnLoad(gameObject);
 	}
@@ -66,11 +67,12 @@ public class NetworkPlayerInfo : MonoBehaviour {
 
 
 	//SERVER
-	public void ApplyStartingPosition(StartPosition startPos){
-		color = startPos.color;
-		initPos = new Vector2(startPos.transform.position.x, startPos.transform.position.y);
+	public void ApplyStartingPosition(int playerID, Transform startPos){
+//		color = startPos.color;
+		this.playerID = playerID;
+		initPos = new Vector2(startPos.position.x, startPos.position.y);
 
-		netView.RPC("RPCApplyStartPosition", RPCMode.All, color.r, color.g, color.b, startPos.transform.position);
+		netView.RPC("RPCApplyStartPosition", RPCMode.All, playerID, startPos.position);
 	}
 
 
@@ -104,12 +106,12 @@ public class NetworkPlayerInfo : MonoBehaviour {
 
 
 	[RPC]
-	public void RPCApplyStartPosition(float r, float g, float b, Vector3 initPos){
+	public void RPCApplyStartPosition(int playerID, Vector3 initPos){
 //		Debug.Log("RPCApplyStartPosition - " + r + ", " + g + ", "  + b);
+		this.playerID = playerID;
 		this.initPos = initPos;
-		color = new Color(r, g, b);
 
-		netManCtrl.PlayerHasAqcuiredStartPosition(this);
+		if (netView.isMine) netManCtrl.PlayerHasAqcuiredStartPosition(this);
 	}
 
 

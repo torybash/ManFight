@@ -5,96 +5,97 @@ using System.Collections.Generic;
 
 public class LevelControl : MonoBehaviour {
 
-	[SerializeField] Transform rockPrefab;
-	[SerializeField] Transform startPosPrefab;
 
-	List<Transform> startingPositions = new List<Transform>();
 
+
+
+	//Variables
 	List<Color> teamColors = null;
-
-	SpriteType[][] currLvl;
-
-
+	MapTile[][] currLvl;
 	public int width, height;
 
+
 	//References
+	LevelCreatorControl lvlCrtrCtrl;
+	NetworkManagerControl netManCtrl;
 	DarknessFogControl fogCtrl;
+	MapMaster mapMstr;
+	public Dictionary<int, Transform> startingPositions = new Dictionary<int, Transform>();
 
 
 
 	void Awake(){
 		fogCtrl = GetComponent<DarknessFogControl>();
+		netManCtrl = GetComponent<NetworkManagerControl>();
+		lvlCrtrCtrl = GetComponent<LevelCreatorControl>();
+		mapMstr = GameObject.Find("LevelLoadingControl").GetComponent<MapMaster>();
 	}
+
+
 
 	public void SpawnLevel(){
-		SpriteType[][] lvl = GetLevel(-1);
-
-		for (int y = 0; y < lvl[0].Length; y++) {
-			for (int x = 0; x < lvl.Length; x++) {
-				if (lvl[x][y] == SpriteType.EMPTY) continue;
-				if (lvl[x][y] == SpriteType.ROCK){
-					Instantiate(rockPrefab, LevelControl.LevelToWorldPos(x, y), Quaternion.identity);
-				}else if (lvl[x][y] == SpriteType.STARTING_POS){
-					Transform startPosTrans = (Transform) Instantiate(startPosPrefab, LevelControl.LevelToWorldPos(x, y), Quaternion.identity);
-					startingPositions.Add(startPosTrans);
-
-					StartPosition startPos = startPosTrans.GetComponent<StartPosition>();
-					startPos.Init(GetNextColor());
-				}
-			}
-		}
+		MapTile[][] lvl = mapMstr.GetLevel(0);
 
 		currLvl = lvl;
-
+		
 		width = lvl.Length;
 		height = lvl[0].Length;
-
+		
 		fogCtrl.InitFog(lvl);
 
+
+		lvlCrtrCtrl.SpawnLevel(lvl);
+
+
+
+
 	}
 
-	private SpriteType[][] GetLevel(int idx){
-		SpriteType[][] lvl = null;
+//	private SpriteType[][] GetLevel(int idx){
+//		SpriteType[][] lvl = mapMstr.GetLevel(idx);
+//
+//
+//
+//		DEBUG LEVEL
+//		int width = 14,  height = 14;
+//		if (idx == -1) {
+//			lvl = new SpriteType[width][];
+//			for (int x = 0; x < width; x++) {
+//				lvl[x] = new SpriteType[height];
+//				for (int y = 0; y < height; y++) {
+//
+//					if (x == 0 || x == width-1 || y == 0 || y == height-1){
+//						lvl[x][y] = SpriteType.ROCK;
+//					}else{
+//						lvl[x][y] = SpriteType.EMPTY;
+//					}
+//
+//					if (x == 3 && y > 5) lvl[x][y] = SpriteType.ROCK;
+//					if (x == 6 && y < 8) lvl[x][y] = SpriteType.ROCK;
+//					if (x == 10 && y > 7) lvl[x][y] = SpriteType.ROCK;
+//				}
+//			}
+//
+//			lvl[1][1] = SpriteType.STARTING_POS;
+//			lvl[width-2][1] = SpriteType.STARTING_POS;
+//			lvl[1][height-2] = SpriteType.STARTING_POS;
+//			lvl[width-2][height-2] = SpriteType.STARTING_POS;
+//
+//			
+//		}
+//		return lvl;
+//	}
 
 
+//	public StartPosition PollRandomStartingPos(){
+//		int idx = Tools.RndRange(0, startingPositions.Count);
+//		StartPosition result = startingPositions[idx].GetComponent<StartPosition>();
+//		startingPositions.Remove(startingPositions[idx]);
+//		return result;
+//	}
 
-		//DEBUG LEVEL
-		int width = 14,  height = 14;
-		if (idx == -1) {
-			lvl = new SpriteType[width][];
-			for (int x = 0; x < width; x++) {
-				lvl[x] = new SpriteType[height];
-				for (int y = 0; y < height; y++) {
-
-					if (x == 0 || x == width-1 || y == 0 || y == height-1){
-						lvl[x][y] = SpriteType.ROCK;
-					}else{
-						lvl[x][y] = SpriteType.EMPTY;
-					}
-
-					if (x == 3 && y > 5) lvl[x][y] = SpriteType.ROCK;
-					if (x == 6 && y < 8) lvl[x][y] = SpriteType.ROCK;
-					if (x == 10 && y > 7) lvl[x][y] = SpriteType.ROCK;
-				}
-			}
-
-			lvl[1][1] = SpriteType.STARTING_POS;
-			lvl[width-2][1] = SpriteType.STARTING_POS;
-			lvl[1][height-2] = SpriteType.STARTING_POS;
-			lvl[width-2][height-2] = SpriteType.STARTING_POS;
-
-			
-		}
-
-		return lvl;
-	}
-
-
-	public StartPosition PollRandomStartingPos(){
-		int idx = Tools.RndRange(0, startingPositions.Count);
-		StartPosition result = startingPositions[idx].GetComponent<StartPosition>();
-		startingPositions.Remove(startingPositions[idx]);
-		return result;
+	public Transform GetStartingPosition(int playerID){
+		return startingPositions[playerID];
 	}
 
 
@@ -141,7 +142,6 @@ public class LevelControl : MonoBehaviour {
 			Node currNode = q.Dequeue();
 //			print ("currNode: " + currNode.x + ", " + currNode.y + " - moves: " + currNode.g + ", h: " + AStarHeuristic(currNode.x, currNode.y, goalPosX, goalPosY) + ", prio: " + currNode.Priority); 
 			if (currNode.x == goalPosX && currNode.y == goalPosY){
-				Debug.Log("Found solution");
 				return GetPathThroughNodes(currNode);
 			}
 
@@ -233,7 +233,7 @@ public class LevelControl : MonoBehaviour {
 
 				if (tileX < 0 || tileY < 0 || tileX >= currLvl.Length || tileY >= currLvl[0].Length) continue;
 				//CHECK FOR UNWALKABLE/UNPASSEABLE/WALL/ROCK
-				if (currLvl[tileX][tileY] == SpriteType.ROCK) continue;
+				if (currLvl[tileX][tileY].sprites.Contains(SpriteType.ROCK)) continue;
 				Node newNode = new Node(tileX, tileY, node.g + 1f - 0.0001f ,node);
 				nodes.Add(newNode);
 			}
@@ -241,6 +241,16 @@ public class LevelControl : MonoBehaviour {
 		return nodes;
 	}
 
+
+
+	public bool IsValidRobotPlacement(int x, int y){
+		int playerID = netManCtrl.localPlayer.playerID;
+
+		MapTile tile = currLvl[x][y];
+		foreach (SpriteType sp in tile.sprites) if (sp == SpriteType.ROCK) return false;
+		if (tile.playerID != playerID) return false;
+		return true;
+	}
 }
 
 
@@ -275,5 +285,6 @@ public class Node : PriorityQueueNode{
 public enum SpriteType{
 	ROCK,
 	STARTING_POS,
+	STARTING_FIELD,
 	EMPTY
 }

@@ -42,7 +42,7 @@ public static class Tools {
 
 
 	public static string ListToString<T>(List<T> list){
-		string result = "List: ";
+		string result = "";
 
 		foreach (var item in list) {
 			result += item.ToString() + ", ";
@@ -53,30 +53,39 @@ public static class Tools {
 
 
 
-	public static Command VectorToCommand(Vector2 vec){
-		if (vec.Equals(up)) return Command.MOVE_UP;
-		else if (vec.Equals(-up)) return Command.MOVE_DOWN;
-		else if (vec.Equals(right)) return Command.MOVE_RIGHT;
-		else if (vec.Equals(-right)) return Command.MOVE_LEFT;
-		else return Command.NONE;
+	public static List<MoveDirection> VectorListToMoves(List<Vector2> vecList){
+		List<MoveDirection> result = new List<MoveDirection>();
+		foreach (Vector2 vec in vecList) {
+			result.Add(VectorToMove(vec));
+		}
+		return result;
 	}
 
-	public static Vector2 CommandToVector(Command cmd){
-		switch (cmd) {
-		case Command.MOVE_UP: return up;
-		case Command.MOVE_DOWN: return -up;
-		case Command.MOVE_RIGHT: return right;
-		case Command.MOVE_LEFT: return -right;
+
+	public static MoveDirection VectorToMove(Vector2 vec){
+		if (vec.Equals(up)) return MoveDirection.UP;
+		else if (vec.Equals(-up)) return MoveDirection.DOWN;
+		else if (vec.Equals(right)) return MoveDirection.RIGHT;
+		else if (vec.Equals(-right)) return MoveDirection.LEFT;
+		else return MoveDirection.NONE;
+	}
+
+	public static Vector2 CommandToVector(MoveDirection move){
+		switch (move) {
+		case MoveDirection.UP: return up;
+		case MoveDirection.DOWN: return -up;
+		case MoveDirection.RIGHT: return right;
+		case MoveDirection.LEFT: return -right;
 		default: return Vector2.zero;
 		}
 	}
 
-	public static Quaternion CommandToRotation(Command cmd){
-		switch (cmd) {
-		case Command.MOVE_UP: return upRot;
-		case Command.MOVE_DOWN: return downRot;
-		case Command.MOVE_RIGHT: return rightRot;
-		case Command.MOVE_LEFT: return leftRot;
+	public static Quaternion MoveToRotation(MoveDirection move){
+		switch (move) {
+		case MoveDirection.UP: return upRot;
+		case MoveDirection.DOWN: return downRot;
+		case MoveDirection.RIGHT: return rightRot;
+		case MoveDirection.LEFT: return leftRot;
 		default: return Quaternion.identity;
 		}
 	}

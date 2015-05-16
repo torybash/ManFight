@@ -1,7 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class RobotGhost : MonoBehaviour {
+public class MakeMapObjects : MonoBehaviour {
+
+	public TextAsset[] lvlTxts;
 
 	// Use this for initialization
 	void Start () {

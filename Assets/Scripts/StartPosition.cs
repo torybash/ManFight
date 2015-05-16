@@ -5,16 +5,6 @@ public class StartPosition : MonoBehaviour {
 
 	public Color color;
 
-	// Use this for initialization
-	void Start () {
-		
-	}
-	
-	// Update is called once per frame
-	void Update () {
-	
-	}
-
 
 
 	public void Init(Color clr){

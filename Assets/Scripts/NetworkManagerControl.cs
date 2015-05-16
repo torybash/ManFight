@@ -10,31 +10,40 @@ public class NetworkManagerControl : MonoBehaviour {
 	List<NetworkPlayerInfo> netPlayers = new List<NetworkPlayerInfo>();
 	int playerCount = 0;
 
-	public Dictionary<string, NetworkPlayerInfo> netPlayerDict = new Dictionary<string, NetworkPlayerInfo>();
-	public Dictionary<string, int> netPlayerIDDict = new Dictionary<string, int>();
+	public Dictionary<string, NetworkPlayerInfo> playersGUIDToNPI = new Dictionary<string, NetworkPlayerInfo>();
+	public Dictionary<string, int> playersGUIDToIDDict = new Dictionary<string, int>();
+	public Dictionary<int, string> playersIDToGUID = new Dictionary<int, string>();
 
 	int playerIncr = 0;
 
 	public bool playersConnected = false;	
 
-	NetworkPlayerInfo localPlayer;
+	public NetworkPlayerInfo localPlayer;
+
 
 	//References
 	GameControl gameCtrl;
 	RobotCommandControl rCmdCtrl;
 	CameraControl camCtrl;
 	NetworkView netView;
-
+	LevelLoadingControl lvlLoadCtrl;
+	GameGUIControl guiCtrl;
+	DarknessFogControl fogCtrl;
 
 	//Prefabs
 	[SerializeField] Transform robotPrefab;
 
-	// Use this for initialization
+
+
 	void Awake () {
 		netView = GetComponent<NetworkView>();
 		gameCtrl = GetComponent<GameControl>();
 		rCmdCtrl = GetComponent<RobotCommandControl>();
 		camCtrl = GetComponent<CameraControl>();
+		guiCtrl = GetComponent<GameGUIControl>();
+		fogCtrl = GetComponent<DarknessFogControl>();
+
+		lvlLoadCtrl = GameObject.Find("LevelLoadingControl").GetComponent<LevelLoadingControl>();
 //		GameObject[] networkPlayersObjs = GameObject.FindGameObjectsWithTag("NetworkPlayer");
 //		playerCount = networkPlayersObjs.Length;
 //		Debug.Log("networkPlayersObjs length: "  + networkPlayersObjs.Length + ", netPlayers[0]: " + netPlayers[0]);
@@ -46,9 +55,13 @@ public class NetworkManagerControl : MonoBehaviour {
 	
 	void Update () {
 		if (!Network.isServer) return;
-		if (playersConnected) return;
 
-		if (HasAllPlayersConnected()){
+		if (playersConnected) return;
+		if (HasAllPlayersConnected() && lvlLoadCtrl.hasLoadedLevel){
+			foreach (string guid in playersGUIDToIDDict.Keys) {
+				playersIDToGUID[playersGUIDToIDDict[guid]] = guid;
+			}
+
 			playersConnected = true;
 			gameCtrl.PlayersConnected();
 		}
@@ -58,16 +71,29 @@ public class NetworkManagerControl : MonoBehaviour {
 	public void SendPlayerEndedTurn(){
 		byte[] srlzdRobotActs = Tools.SerializeObj(rCmdCtrl.GetRobotCommands());
 
-		netView.RPC("RPCPlayerEndedTurn", RPCMode.Server, Network.player.guid, srlzdRobotActs);
-
 		if (Network.isServer){
 			RPCPlayerEndedTurn(netView.owner.guid, srlzdRobotActs);
+		}else{
+			netView.RPC("RPCPlayerEndedTurn", RPCMode.Server, Network.player.guid, srlzdRobotActs);
 		}
+
 	}
 
 
 	public void PlayerHasAqcuiredStartPosition(NetworkPlayerInfo player){
 		camCtrl.SetCameraPosition(player.initPos);
+
+		//DEBUG
+		fogCtrl.UpdateVisibility((int)player.initPos.x, (int)player.initPos.y, 3);
+	}
+
+	public void RobotPlaced(Robot rob, int x, int y){
+		if (Network.isServer){
+			RPCRobotPlaced(Network.player.guid, rob.robotID, x, y);
+		}else{
+			netView.RPC("RPCRobotPlaced", RPCMode.Server, Network.player.guid, rob.robotID, x, y);
+		}
+
 	}
 
 
@@ -76,8 +102,8 @@ public class NetworkManagerControl : MonoBehaviour {
 		if (npi.netView.isMine) localPlayer = npi;
 
 		netPlayers.Add(npi);
-		netPlayerDict.Add(playerGUID, npi);
-		netPlayerIDDict.Add(playerGUID, playerIncr++);
+		playersGUIDToNPI.Add(playerGUID, npi);
+		playersGUIDToIDDict.Add(playerGUID, playerIncr++);
 
 		Debug.Log("SetPlayer - npi: " + npi + ", playerGUID: " + playerGUID);
 	}
@@ -88,32 +114,52 @@ public class NetworkManagerControl : MonoBehaviour {
 	}
 
 	public void PlayOutCommands(){
-		netView.RPC("RPCPlayOutCommands", RPCMode.AllBuffered);
+		netView.RPC("RPCPlayingOutCommands", RPCMode.AllBuffered);
 	}
 
 
-	public bool HasAllPlayersConnected(){
+	bool HasAllPlayersConnected(){
 		int amountPlayers = Network.connections.Length + 1;
 		if (netPlayers.Count == amountPlayers) return true;
 		return false;
 	}
 
-	public void ToAllTurnStarted(){
-		netView.RPC("RPCTurnStarted", RPCMode.AllBuffered);
+	public void ToAllTurnStarted(int turn){
+		netView.RPC("RPCTurnStarted", RPCMode.AllBuffered, turn);
 	}
 
-	public void SpawnRobotForPlayer(int playerIdx){
+	public void SpawnRobotsForPlayer(int playerIdx, int robotCnt){
 		NetworkPlayerInfo player = netPlayers[playerIdx];
 
-		Vector3 spawnPos = Tools.AddHalf(new Vector3((int)player.initPos.x, (int)player.initPos.y, 0));
-		Robot robot = ((Transform)Network.Instantiate(robotPrefab, spawnPos, Quaternion.identity, 0)).GetComponent<Robot>();
-		robot.Init(player.robotIDIncr++, player.color);
+//		Debug.Log("SpawnRobotsForPlayer - playerIdx: " + playerIdx + ", player.color: " + player.color);
 
-		gameCtrl.AddPlayerRobot(robot, player.netView.owner.guid);
+
+
+//		Vector3 spawnPos = Tools.AddHalf(new Vector3((int)player.initPos.x, (int)player.initPos.y, 0));
+		Vector3 spawnPos = new Vector3(-100, -100, 0);
+
+		Color clr = PlayerHelper.IDToColor(playerIdx);
+
+		for (int i = 0; i < robotCnt; i++) {
+			Robot robot = ((Transform)Network.Instantiate(robotPrefab, spawnPos, Quaternion.identity, (int)NetGroup.DEFAULT)).GetComponent<Robot>();
+			robot.ServerInit(player.robotIDIncr++, clr, playersIDToGUID[playerIdx]);
+
+			gameCtrl.AddPlayerRobot(robot, player.netView.owner.guid);
+		}
+
+
 //		SpawnedRobotForPlayer(robot, player);
 
-		netView.RPC("RPCSpawnedRobotForPlayer", RPCMode.AllBuffered, robot.netView.viewID, player.netView.owner);
+//		StartCoroutine(SendSpawnedRobotForPlayer(robot, player));
+
+//		netView.RPC("RPCSpawnedRobotForPlayer", RPCMode.AllBuffered, robot.netView.viewID, player.netView.owner);
 	}
+
+
+//	IEnumerator SendSpawnedRobotForPlayer(Robot robot, NetworkPlayerInfo player){
+//		yield return null;
+//		netView.RPC("RPCSpawnedRobotForPlayer", RPCMode.AllBuffered, robot.netView.viewID, player.netView.owner);
+//	}
 
 //	public void SpawnedRobotForPlayer(Robot robot, NetworkPlayerInfo player){
 //		rCmdCtrl.AddRobot(robot);
@@ -125,17 +171,23 @@ public class NetworkManagerControl : MonoBehaviour {
 
 	//RPCS
 
+//	[RPC]
+//	void RPCSpawnedRobotForPlayer(NetworkViewID robotViewID, NetworkPlayer networkPlayer){
+//
+//		if (networkPlayer.Equals(Network.player)){ //is mine?
+//			Debug.Log("RPCSpawnedRobotForPlayer (is mine!) - robotViewID: "  +robotViewID);
+//			NetworkView robotView = NetworkView.Find(robotViewID);
+//			Robot robot = robotView.GetComponent<Robot>();
+//			rCmdCtrl.AddRobot(robot);
+//		}
+//	}
+
 	[RPC]
-	void RPCSpawnedRobotForPlayer(NetworkViewID robotViewID, NetworkPlayer networkPlayer){
+	void RPCRobotPlaced(string playerGUID, int roboID, int x, int y){
+		if (!Network.isServer) return;
 
-		if (networkPlayer.Equals(Network.player)){ //is mine?
-			Debug.Log("RPCSpawnedRobotForPlayer (is mine!) - robotViewID: "  +robotViewID);
-			NetworkView robotView = NetworkView.Find(robotViewID);
-			Robot robot = robotView.GetComponent<Robot>();
-			rCmdCtrl.AddRobot(robot);
-		}
+		gameCtrl.PlayerRobotPlaced(playerGUID, roboID, x, y);
 	}
-
 
 	[RPC]
 	void RPCPlayerEndedTurn(string playerGUID, byte[] srlzdRobotActs){
@@ -143,32 +195,42 @@ public class NetworkManagerControl : MonoBehaviour {
 
 		List<RobotCommand> robotCommands = Tools.DeserializeObj(srlzdRobotActs);
 
-		gameCtrl.PlayerHasEndedTurn(netPlayerIDDict[playerGUID], robotCommands);
+		gameCtrl.PlayerHasEndedTurn(playersGUIDToIDDict[playerGUID], robotCommands);
 
 	}
 
 
 	[RPC]
-	void RPCPlayOutCommands(){
+	void RPCPlayingOutCommands(){
+		guiCtrl.PlayingOutCommands();
+
+//		rCmdCtrl.Enable(false);
+
+		rCmdCtrl.PlayingOutCommands();
 
 	}
 
 	[RPC]
-	void RPCTurnStarted(){
-		gameCtrl.TurnStarted();
+	void RPCTurnStarted(int turn){
+		guiCtrl.Enable(true);
+		guiCtrl.UpdateTurn(turn);
+
+		rCmdCtrl.StartTurn(turn);
+
+		if (turn == 1) guiCtrl.UpdateRobotPlacingMenu();
 	}
 
 
 
-	void OnGUI(){
-		GUI.TextField(new Rect(0, 0, 250, 30), "guid: " + netView.owner.guid);
-		GUI.TextField(new Rect(0, 35, 250, 30), "guid: " + Network.player.guid);
-		GUI.TextField(new Rect(0, 70, 250, 30), "isServer: " + Network.isServer);
-		GUI.TextField(new Rect(0, 105, 250, 30), "isClient: " + Network.isClient);
-		GUI.TextField(new Rect(0, 140, 250, 30), "connections: " + Network.connections.Length);
-		GUI.TextField(new Rect(0, 175, 250, 30), "netPlayers: " + netPlayers.Count);
-		GUI.TextField(new Rect(0, 210, 250, 30), "playersConnected: " + playersConnected);
-
-
-	}
+//	void OnGUI(){
+//		GUI.TextField(new Rect(Screen.width-250, 0, 250, 30), "guid: " + netView.owner.guid);
+//		GUI.TextField(new Rect(Screen.width-250, 35, 250, 30), "guid: " + Network.player.guid);
+//		GUI.TextField(new Rect(Screen.width-250, 70, 250, 30), "isServer: " + Network.isServer);
+//		GUI.TextField(new Rect(Screen.width-250, 105, 250, 30), "isClient: " + Network.isClient);
+//		GUI.TextField(new Rect(Screen.width-250, 140, 250, 30), "connections: " + Network.connections.Length);
+//		GUI.TextField(new Rect(Screen.width-250, 175, 250, 30), "netPlayers: " + netPlayers.Count);
+//		GUI.TextField(new Rect(Screen.width-250, 210, 250, 30), "playersConnected: " + playersConnected);
+//
+//
+//	}
 }

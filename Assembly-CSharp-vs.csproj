@@ -46,6 +46,13 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\IOTools.cs" />
+     <Compile Include="Assets\LevelCreatorControl.cs" />
+     <Compile Include="Assets\MakeMapObjects.cs" />
+     <Compile Include="Assets\MapEditorControl.cs" />
+     <Compile Include="Assets\MapMaster.cs" />
+     <Compile Include="Assets\MenuGUIControl.cs" />
+     <Compile Include="Assets\PlayoutControl.cs" />
      <Compile Include="Assets\RobotStream.cs" />
      <Compile Include="Assets\RobotVision.cs" />
      <Compile Include="Assets\Scripts\BirdControl.cs" />
@@ -57,10 +64,15 @@
      <Compile Include="Assets\Scripts\GameGUIControl.cs" />
      <Compile Include="Assets\Scripts\GameServer.cs" />
      <Compile Include="Assets\Scripts\LevelControl.cs" />
+     <Compile Include="Assets\Scripts\LevelLoadingControl.cs" />
+     <Compile Include="Assets\Scripts\MapObject.cs" />
+     <Compile Include="Assets\Scripts\MapTile.cs" />
+     <Compile Include="Assets\Scripts\NetGroup.cs" />
      <Compile Include="Assets\Scripts\NetworkManager.cs" />
      <Compile Include="Assets\Scripts\NetworkManagerControl.cs" />
      <Compile Include="Assets\Scripts\NetworkPlayerInfo.cs" />
      <Compile Include="Assets\Scripts\PathArrowControl.cs" />
+     <Compile Include="Assets\Scripts\PlayerHelper.cs" />
      <Compile Include="Assets\Scripts\Priority Queue\HeapPriorityQueue.cs" />
      <Compile Include="Assets\Scripts\Priority Queue\IPriorityQueue.cs" />
      <Compile Include="Assets\Scripts\Priority Queue\PriorityQueueNode.cs" />
@@ -72,6 +84,8 @@
      <Compile Include="Assets\Scripts\StartPosition.cs" />
      <Compile Include="Assets\Scripts\TilePos.cs" />
      <Compile Include="Assets\Scripts\Tools.cs" />
+     <None Include="Assets\MapFiles\promap.txt" />
+     <None Include="Assets\MapFiles\map0.txt" />
  <Reference Include="UnityEngine.UI">
  <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
  </Reference>
