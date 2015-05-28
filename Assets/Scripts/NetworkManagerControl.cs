@@ -212,10 +212,9 @@ public class NetworkManagerControl : MonoBehaviour {
 
 	[RPC]
 	void RPCTurnStarted(int turn){
-		guiCtrl.Enable(true);
-		guiCtrl.UpdateTurn(turn);
+		guiCtrl.TurnStarted(turn);
 
-		rCmdCtrl.StartTurn(turn);
+		rCmdCtrl.TurnStarted(turn);
 
 		if (turn == 1) guiCtrl.UpdateRobotPlacingMenu();
 	}

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System; // We will need the Serializable Attribute from here
@@ -22,7 +22,7 @@ public static class Tools {
 		return UnityEngine.Random.Range(x1, x2);
 	}
 	
-	public static Vector2 AddHalf(Vector2 vec){
+	public static Vector2 CleanPos(Vector2 vec){
 
 
 		int x = 0;

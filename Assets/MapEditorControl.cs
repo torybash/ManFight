@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -140,7 +140,7 @@ public class MapEditorControl : MonoBehaviour {
 	}
 
 	void SpawnSprite(Transform prefab, Vector2 pos, int playerID){
-		Transform sprite = (Transform) Instantiate(prefab, Tools.AddHalf(pos), Quaternion.identity);
+		Transform sprite = (Transform) Instantiate(prefab, Tools.CleanPos(pos), Quaternion.identity);
 		currLvlObjs[(int)pos.x][(int)pos.y].Add(sprite);
 		
 		if (playerID >= 0){

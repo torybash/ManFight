@@ -32,14 +32,17 @@ public class GameGUIControl : MonoBehaviour {
 
 	[SerializeField] Slider prepTimerSlider;
 	[SerializeField] Text prepTimerText;
+	[SerializeField] Image aimImage;
+	[SerializeField] Button endTurnButton;
 
 	//Variables
-	bool on = true;
 
 	Transform[] placingRobots;
 
 	Transform floatingRobotImage;
 	Robot floatingRobot;
+
+	bool endTurnClicked = false;
 
 	void Awake () {
 		gameCtrl = GetComponent<GameControl>();
@@ -102,7 +105,9 @@ public class GameGUIControl : MonoBehaviour {
 				int x = (int) pos.x; int y = (int) pos.y;
 
 				if (lvlCtrl.IsValidRobotPlacement(x, y)){
-					netManCtrl.RobotPlaced(floatingRobot, (int) pos.x, (int) pos.y);
+					rCmdCtrl.CheckForAllRobotsPlaced();
+					netManCtrl.RobotPlaced(floatingRobot, x, y);
+					floatingRobot.Placed(x, y);
 				}else{
 					floatingRobot.needPlacing = true;
 					UpdateRobotPlacingMenu();
@@ -121,31 +126,45 @@ public class GameGUIControl : MonoBehaviour {
 
 	//OUT 
 	public void PlayerEndTurn(){
-		if (!on) return;
-
+		if (endTurnClicked) return;
+		endTurnClicked = true;
 		netManCtrl.SendPlayerEndedTurn();
 	}
 
-	public void ShootModeForCurrentRobot(bool on){
-		rCmdCtrl.ShootModeEnable(on);
-
-		if (on){
-
-
-			shootModeButton.GetComponentInChildren<Text>().text = "Shoot mode";
-			shootModeButton.onClick.AddListener(() => ShootModeForCurrentRobot(false));
-
-
-		}else{
-			shootModeButton.GetComponentInChildren<Text>().text = "Walk mode";
-			shootModeButton.onClick.AddListener(() => ShootModeForCurrentRobot(true));
-		}
-	}
+//	public void ShootModeForCurrentRobot(bool on){
+//		rCmdCtrl.ShootModeEnable(on);
+//
+//		if (on){
+//
+//
+//			shootModeButton.GetComponentInChildren<Text>().text = "Shoot mode";
+//			shootModeButton.onClick.AddListener(() => ShootModeForCurrentRobot(false));
+//
+//
+//		}else{
+//			shootModeButton.GetComponentInChildren<Text>().text = "Walk mode";
+//			shootModeButton.onClick.AddListener(() => ShootModeForCurrentRobot(true));
+//		}
+//	}
 
 	public void PrepTimerSliderChanged(){
 //		prepTimerSlider
 		rCmdCtrl.prepTimer = prepTimerSlider.value;
 		prepTimerText.text = "Time: " + prepTimerSlider.value;
+	}
+
+
+	public void AimAdjusted(){
+		//Detect click pos
+		Vector2 clickPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+		Vector2 aimImagePos = aimImage.rectTransform.position;
+
+		//Calc aiming angle
+		Vector2 diffVec = clickPos - aimImagePos;
+
+		float angle = Mathf.Atan2(diffVec.y, diffVec.x) * Mathf.Rad2Deg - 90f;
+		UpdateAimGUI(angle);
+		rCmdCtrl.AimAdjustedForCurrRobot(angle);
 	}
 
 
@@ -155,26 +174,38 @@ public class GameGUIControl : MonoBehaviour {
 		prepTimerText.text = "Time: " + timer;
 	}
 
-	public void UpdateTurn(int turn){
+	public void TurnStarted(int turn){
 		turnText.text = "Turn: " + turn;
+
+		generalInfoPanel.gameObject.SetActive(true);
+		endTurnButton.gameObject.SetActive(true);
+
+		endTurnClicked = false;
 	}
 
 	
-	public void UpdateRobotPanel(Robot robot){
+	public void UpdateSelectedRobot(Robot robot){
+		robotNameText.text = robot.robName;
 		robotPanel.gameObject.SetActive(true);
-		
+		UpdateAimGUI(robot.prepAngle);
 //		movesLeftText.text = "Moves: " + robot.movesLeft + "/" + robot.maxMoves;
 	}
 	
 	
-	public void PlayingOutCommands(){
+	public void PlayingOutCommands()
+	{
+//		generalInfoPanel.
 		
+		generalInfoPanel.gameObject.SetActive(false);
 		robotPanel.gameObject.SetActive(false);
-		Enable(false);
+		endTurnButton.gameObject.SetActive(false);
+
 	}
 
 
 	public void UpdateRobotPlacingMenu(){
+		Debug.Log("UpdateRobotPlacingMenu");
+
 		robotPlacingPanel.gameObject.SetActive(true);
 		List<Robot> robots = rCmdCtrl.controlledRobots;
 
@@ -192,6 +223,7 @@ public class GameGUIControl : MonoBehaviour {
 			return;
 		}
 
+		Debug.Log("stillNeedPlacementRobots size: " + stillNeedPlacementRobots.Count);
 		int c = 0;
 		foreach (Robot rob in stillNeedPlacementRobots) {
 			Transform robTrans = null;
@@ -200,6 +232,7 @@ public class GameGUIControl : MonoBehaviour {
 				placingRobots[rob.robotID] = robTrans;
 			}else{
 				robTrans = placingRobots[rob.robotID];
+				robTrans.gameObject.SetActive(true);
 			}
 
 			robTrans.SetParent(robotPlacingPanel);
@@ -224,7 +257,6 @@ public class GameGUIControl : MonoBehaviour {
 			return;
 		}
 
-
 		rob.needPlacing = false;
 		Vector3 pos = panelImage.position;
 		pos.z = 0;
@@ -235,7 +267,16 @@ public class GameGUIControl : MonoBehaviour {
 	}
 
 
-	public void Enable(bool on){
-		this.on = on;
+
+
+	//INTERNAL
+	void UpdateAimGUI(float angle){
+		float rest = angle % 45f;
+		if (rest > 22.5f){
+			angle = angle - rest + 45f;
+		}else{
+			angle = angle - rest;
+		}
+		aimImage.rectTransform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
 	}
 }

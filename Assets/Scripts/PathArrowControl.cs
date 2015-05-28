@@ -10,6 +10,7 @@ public class PathArrowControl : MonoBehaviour {
 	//-->
 	Dictionary<PathType, PathSprite> pathSpriteDict = new Dictionary<PathType, PathSprite>();
 
+
 	Dictionary<int, List<MoveDirection>> paths = new Dictionary<int, List<MoveDirection>>();
 
 
@@ -31,37 +32,59 @@ public class PathArrowControl : MonoBehaviour {
 		cont.name = "PathArrowContainer";
 	}
 
-	public void UpdatePath(Robot robot, List<Vector2> moveList){
+	public void UpdatePath(Robot robot, List<Vector2> moveList, bool isOverriding){
 		DestroyArrows(robot);
 
-		//New path addition
-		List<MoveDirection> moves = null;
-		if (paths.ContainsKey(robot.robotID)) moves = paths[robot.robotID];
-		else moves = new List<MoveDirection>();
-		List<MoveDirection> newMoves = Tools.VectorListToMoves(moveList);
-		foreach (MoveDirection move in newMoves) {
-			moves.Add(move);
+		Debug.Log("UpdatePath - isOverriding: "+ isOverriding);
+		//Handle overriding
+		if (isOverriding){
+			for (int i = 0; i < robot.robotHistory.Count; i++) {
+				RobotHistory robHist = robot.robotHistory[i];
+				if (robHist.time == robot.robotPrepTimer){
+					robot.robotHistory = robot.robotHistory.GetRange(0, i);
+					break;
+				}else if (robHist.time >= robot.robotPrepTimer){
+					robot.robotHistory = robot.robotHistory.GetRange(0, i+1);
+					break;
+				}
+			}
 		}
 
+		//Make moves list
+		List<MoveDirection> moves = new List<MoveDirection>();
+//		if (paths.ContainsKey(robot.robotID)) moves = paths[robot.robotID];
+//		else moves = new List<MoveDirection>();
+//		List<MoveDirection> newMoves = Tools.VectorListToMoves(moveList);
+//		foreach (MoveDirection move in newMoves) {
+//			moves.Add(move);
+//		}
+		RobotHistory lastHist = new RobotHistory(0, robot.startTurnPos);
+		for (int i = 0; i < robot.robotHistory.Count; i++) {
+			RobotHistory hist = robot.robotHistory[i];
+
+			Vector2 move = hist.pos - lastHist.pos;
+			MoveDirection moveDir = Tools.VectorToMove(move);
+			moves.Add(moveDir);
+
+			lastHist.pos = hist.pos;
+			lastHist.time = hist.time;
+		}
+
+
+		//Spawn path arrows
 		Vector2 posIncr = robot.transform.position;
 		int c = 0;
 		List<Transform> robotPathArrows = new List<Transform>();
-//		foreach (Command command in path) {
-		for (int i = 0; i < moves.Count; i++) {
+		for (int i = 0; i < moves.Count; i++) 
+		{
 			MoveDirection command = moves[i];
 			MoveDirection nextCommand = (i == moves.Count - 1 ? MoveDirection.NONE : moves[i + 1]);
 
-		
-			
-
-
 			Quaternion rot = Tools.MoveToRotation(command);
-//			Vector2 pos = posIncr; // + 0.5f * Tools.CommandToVector(command);
 			Vector2 pos = posIncr + 1f * Tools.CommandToVector(command);
 
 			Transform pathArrow = (Transform) Instantiate(pathArrowPrefab, pos, rot);
 			pathArrow.GetComponent<SpriteRenderer>().color = new Color(1, 1, 1);
-
 
 			//Set sprite
 			PathType pathType = CalculatePathType(command, nextCommand);
@@ -110,11 +133,11 @@ public class PathArrowControl : MonoBehaviour {
 		return PathType.STRAIGHT;
 	}
 
-	public void Enable(bool on){
-		if(on){
-
-		}else{
-			DestroyArrows();
+	public void TurnStarted()
+	{
+		DestroyArrows();
+		foreach (int robID in paths.Keys) {
+			paths[robID].Clear();
 		}
 	}
 

@@ -23,9 +23,11 @@ public class RobotCommandControl : MonoBehaviour {
 
 	//Variables
 	bool on = true;
-	bool shootMode = false;
+	bool robotsNeedPlacing = false;
 
 	public float prepTimer;
+
+
 
 	void Awake(){
 		lvlCtrl = GetComponent<LevelControl>();
@@ -38,6 +40,7 @@ public class RobotCommandControl : MonoBehaviour {
 	void Update () {
 		if (!on) return;
 		if (UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return;
+		if (robotsNeedPlacing) return;
 
 		bool selectedNew = Selecting();
 		if (!selectedNew) CommandGiving();
@@ -45,31 +48,53 @@ public class RobotCommandControl : MonoBehaviour {
 	}
 
 
-	bool Selecting(){
-
-
+	bool Selecting()
+	{
 		if (Input.GetMouseButtonDown(0)){
 			//get mouse pos
 			RaycastHit2D hit = Physics2D.Raycast(Camera.main.ScreenToWorldPoint(Input.mousePosition), Vector2.zero);
-			if (hit.collider != null && hit.collider.tag.Equals("Robot") && controlledRobots.Contains(hit.collider.GetComponent<Robot>())){
-				RobotSelected(hit.collider.GetComponent<Robot>());
+			if (hit.collider != null && hit.collider.tag.Equals("RobotGhost")){
+
+				//Get Robot and check if belonging to player (controlledRobots)
+				Robot rob = hit.collider.GetComponent<RobotGhost>().rob;
+
+				if (controlledRobots.Contains(rob)){
+					RobotSelected(rob);
+				}
+
 				return true;
 			}
 		}
 		return false;
 	}
 
-	void RobotSelected(Robot rob){
-		selectedRobot = rob;
-		SetSelector(Tools.AddHalf(selectedRobot.transform.position));
-		guiCtrl.UpdateRobotPanel(selectedRobot);
+	void RobotSelected(Robot rob)
+	{
+		Debug.Log("RobotSelected - robID: "+ rob.robotID + ", prep timer: " + rob.robotPrepTimer);
 
-		UpdatePrepTimer(rob.robotPrepTimer);
+		//Get latest prep time for robot
+		float latestMoveTime = rob.GetLatestMoveTime();
+		if (rob.robotPrepTimer < latestMoveTime){
+			prepTimer = rob.robotPrepTimer;
+		}else{
+			prepTimer = latestMoveTime;
+		}
+
+		selectedRobot = rob;
+		SetSelector(Tools.CleanPos(selectedRobot.transform.position));
+		guiCtrl.UpdateSelectedRobot(selectedRobot);
+
+
+		guiCtrl.PrepTimerChanged(prepTimer);
+//		UpdatePrepValues(prepTimer);
+		UpdateAllRobotsPrepValues();
+
+//		rob.UpdatePrepValues(prepTimer);
 	}
 
-	void UpdateRobotPositions(){
-		foreach (Robot rob in controlledRobots) {
-			rob.UpdatePositionToTime(prepTimer);
+	void UpdateAllRobotsPrepValues(){
+		foreach (Robot robot in controlledRobots) {
+			robot.UpdatePrepValues(prepTimer);
 		}
 	}
 
@@ -80,22 +105,21 @@ public class RobotCommandControl : MonoBehaviour {
 		selectorTrans.position = pos;
 	}
 
-	void CommandGiving(){
-		
-		if (selectedRobot != null){
-//			Debug.Log("selected: " + selectedRobot);
-			if (shootMode){
-				Vector2 hoverTilePos = Tools.AddHalf(Camera.main.ScreenToWorldPoint(Input.mousePosition));
+	void CommandGiving()
+	{	
+		if (selectedRobot != null)
+		{
 
+			if (Input.GetMouseButtonDown(0))
+			{
+				Vector2 clickedTilePos = Tools.CleanPos(Camera.main.ScreenToWorldPoint(Input.mousePosition));
+				List<Vector2> commandList = CalculateRoute(selectedRobot.ghostPos, clickedTilePos);
 
-			}else{
-
-				if (Input.GetMouseButtonDown(0)){
-					Vector2 clickedTilePos = Tools.AddHalf(Camera.main.ScreenToWorldPoint(Input.mousePosition));
-					List<Vector2> commandList = CalculateRoute(selectedRobot.ghostPosition, clickedTilePos);
-
-					if (commandList != null){
-						ValidMoveCommandGiven(commandList, clickedTilePos);
+				if (commandList != null)
+				{
+					float timeForMove = RobotCommand.MoveCommandsDuration(commandList, selectedRobot.robotHeight);
+					if (timeForMove + prepTimer <= gameCtrl.playoutDuration){
+						ValidMoveCommandGiven(commandList, clickedTilePos, timeForMove);
 					}
 				}
 			}
@@ -103,49 +127,69 @@ public class RobotCommandControl : MonoBehaviour {
 	}
 
 
-	void ValidMoveCommandGiven(List<Vector2> commandList, Vector2 endPos){
+	void ValidMoveCommandGiven(List<Vector2> commandList, Vector2 endPos, float timeForMove)
+	{
+		//Is overriding commands?
+		bool isOverriding = selectedRobot.GetLatestMoveTime() < prepTimer; //TODO Use in dialog box
 
-		Command cmd = Command.MOVE_TO;
-		float timeForMove = RobotCommand.MoveCommandsDuration(commandList, selectedRobot.robotHeight);
+		//Add commands 
+		Vector2 simulPos = selectedRobot.ghostPos;
+		float simulTime = prepTimer;
+		foreach (Vector2 move in commandList) {
+//			Vector2 lastPos = simulPos;
+			simulPos += move;
+			simulTime += RobotCommand.CommandDuration(CommandType.MOVE_TO, selectedRobot.prepRobotHeight);
+			Command cmd = new Command(CommandType.MOVE_TO, (int)simulPos.x, (int)simulPos.y, -1);
+			selectedRobot.robotCommand.AddCommand(cmd);
+			selectedRobot.SetStateAtTime(simulTime, simulPos);
+		}
 
-		UpdatePrepTimer(prepTimer + timeForMove);
 
-		selectedRobot.robotCommand.AddCommand(cmd, endPos);
 
-		SetGhostPosition(endPos);
+		//Update prep timer and prep values
+		UpdatePrepValues(prepTimer + timeForMove);
+//		selectedRobot.robotPrepTimer = prepTimer;
 
-		guiCtrl.UpdateRobotPanel(selectedRobot);
-		pathArwCtrl.UpdatePath(selectedRobot, commandList);
-
+		//Visual stuff (and ghostPos)
+		guiCtrl.UpdateSelectedRobot(selectedRobot);
+		pathArwCtrl.UpdatePath(selectedRobot, commandList, isOverriding);
+		SetGhostPosition(selectedRobot, endPos);
 	}
 
-	void SetGhostPosition(Vector2 pos){
-		selectedRobot.ghostPosition = pos;
-		int id = selectedRobot.robotID;
-		if (!currRobotGhosts.ContainsKey(id)) currRobotGhosts.Add(id, (Transform) Instantiate(robotGhostPrefab));
-		currRobotGhosts[id].GetComponent<RobotGhost>().SetSprite(selectedRobot.color);
-		currRobotGhosts[id].position = pos;
+	public void SetGhostPosition(Robot rob, Vector2 pos)
+	{
+		rob.ghostPos = pos;
+		int robID = rob.robotID;
+		if (!currRobotGhosts.ContainsKey(robID)) currRobotGhosts.Add(robID, (Transform) Instantiate(robotGhostPrefab));
+		currRobotGhosts[robID].GetComponent<RobotGhost>().Init(rob.color, rob);
+		currRobotGhosts[robID].position = pos;
 	}
 
-	void UpdatePrepTimer(float newPrepTime){
+	void UpdatePrepValues(float newPrepTime)
+	{
 		prepTimer = newPrepTime;
-		selectedRobot.robotPrepTimer = prepTimer;
+		UpdateAllRobotsPrepValues();
+
 		guiCtrl.PrepTimerChanged(prepTimer);
 	}
 
-	public void AddRobot(Robot robot){
+	public void AddRobot(Robot robot)
+	{
 		controlledRobots.Add(robot);
 	}
 
 
-	public void StartTurn(int turn){
+	public void TurnStarted(int turn)
+	{
 		on = true;
 
+
 		foreach (Robot robot in controlledRobots) {
-			robot.StartTurn();
+			robot.TurnStarted();
 		}
 
-		pathArwCtrl.Enable(false);
+		UpdatePrepValues(0);
+		pathArwCtrl.TurnStarted();
 	}
 
 	public List<RobotCommand> GetRobotCommands(){
@@ -156,27 +200,13 @@ public class RobotCommandControl : MonoBehaviour {
 		return list;
 	}
 
-	List<Vector2> CalculateRoute(Vector2 robotPos, Vector2 clickPos){
+
+
+
+	List<Vector2> CalculateRoute(Vector2 robotPos, Vector2 clickPos)
+	{
 		List<Vector2> route = new List<Vector2>();
-
-
 		route = lvlCtrl.AStarPath(robotPos, clickPos);
-
-		//Debug
-//		Vector2 diffVector = clickPos - robotPos;
-//		int x = (int)diffVector.x;
-//		int y = (int)diffVector.y;
-//		while (x > 0 || y > 0 || x < 0 || y < 0){
-//			if (Mathf.Abs(x) > Mathf.Abs(y)){
-//				route.Add(new Vector2(Mathf.Sign(x), 0));
-//		        x -= (int)Mathf.Sign(x);
-//			}else{
-//				route.Add(new Vector2(0, Mathf.Sign(y)));
-//				y -= (int)Mathf.Sign(y);
-//			}
-//		}
-		//debug
-
 		return route;
 	}
 
@@ -190,10 +220,29 @@ public class RobotCommandControl : MonoBehaviour {
 	public void PlayingOutCommands(){
 		Enable(false);
 	}
+	
 
-	public void ShootModeEnable(bool on){
-		shootMode = on;
+	//From GUI
+	public void AimAdjustedForCurrRobot(float angle)
+	{
+		Command cmd = new Command(CommandType.SET_ANGLE, -1, -1, angle);
+
+		//Just overwrite if last command was also SET_ANGLE
+		if (selectedRobot.robotCommand.turnCommands.Count > 0 && selectedRobot.robotCommand.turnCommands[selectedRobot.robotCommand.turnCommands.Count - 1].cmdTyp == CommandType.SET_ANGLE){
+			selectedRobot.robotCommand.turnCommands[selectedRobot.robotCommand.turnCommands.Count - 1].val = angle;
+		}else{
+			selectedRobot.robotCommand.AddCommand(cmd);
+		}
 	}
+
+	public void CheckForAllRobotsPlaced(){
+		bool hasPlacedAll = true;
+		foreach (Robot rob in controlledRobots) {
+			if (rob.needPlacing) hasPlacedAll = false;
+		}
+		robotsNeedPlacing = !hasPlacedAll;
+	}
+
 
 	public void Enable(bool on){
 		this.on = on;
@@ -214,3 +263,4 @@ public class RobotCommandControl : MonoBehaviour {
 		}
 	}
 }
+

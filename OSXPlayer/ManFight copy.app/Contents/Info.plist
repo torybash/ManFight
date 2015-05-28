@@ -7,7 +7,7 @@
 	<key>CFBundleExecutable</key>
 	<string>ManFight</string>
 	<key>CFBundleGetInfoString</key>
-	<string>Unity Player version 5.0.1f1 (5a2e8fe35a68). (c) 2015 Unity Technologies ApS. All rights reserved.</string>
+	<string>Unity Player version 5.0.2p1 (8532b35838a2). (c) 2015 Unity Technologies ApS. All rights reserved.</string>
 	<key>CFBundleIconFile</key>
 	<string>PlayerIcon.icns</string>
 	<key>CFBundleIdentifier</key>
@@ -19,16 +19,16 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>Unity Player version 5.0.1f1</string>
+	<string>Unity Player version 5.0.2p1</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>5.0.1f1</string>
+	<string>5.0.2p1</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>PlayerApplication</string>
 	<key>UnityBuildNumber</key>
-	<string>5a2e8fe35a68</string>
+	<string>8532b35838a2</string>
 </dict>
 </plist>

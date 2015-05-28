@@ -1,17 +1,12 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scripts/NetworkManagerControl.cs">
+  <MonoDevelop.Ide.Workspace />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scripts/RobotCommandControl.cs">
     <Files>
-      <File FileName="Assets/RobotStream.cs" Line="1" Column="1" />
-      <File FileName="Assets/MenuGUIControl.cs" Line="1" Column="1" />
-      <File FileName="Assets/Scripts/RobotCommandControl.cs" Line="151" Column="2" />
-      <File FileName="Assets/Scripts/PathArrowControl.cs" Line="82" Column="33" />
-      <File FileName="Assets/Scripts/GameControl.cs" Line="113" Column="30" />
-      <File FileName="Assets/Scripts/CameraControl.cs" Line="1" Column="1" />
-      <File FileName="Assets/Scripts/RobotGhost.cs" Line="1" Column="1" />
-      <File FileName="Assets/PlayoutControl.cs" Line="33" Column="12" />
-      <File FileName="Assets/Scripts/RobotCommand.cs" Line="10" Column="58" />
-      <File FileName="Assets/Scripts/NetworkManagerControl.cs" Line="67" Column="4" />
+      <File FileName="Assets/MenuGUIControl.cs" Line="34" Column="15" />
+      <File FileName="Assets/Scripts/Robot.cs" Line="160" Column="1" />
+      <File FileName="Assets/Scripts/RobotCommandControl.cs" Line="80" Column="10" />
+      <File FileName="Assets/Scripts/PathArrowControl.cs" Line="38" Column="58" />
+      <File FileName="Assets/Scripts/Tools.cs" Line="59" Column="27" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>

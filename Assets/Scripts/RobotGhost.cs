@@ -3,6 +3,8 @@ using System.Collections;
 
 public class RobotGhost : MonoBehaviour {
 
+	public Robot rob;
+
 	SpriteRenderer[] srs;
 
 	void Awake () {
@@ -10,9 +12,11 @@ public class RobotGhost : MonoBehaviour {
 	}
 
 
-	public void SetSprite(Color color){
+	public void Init(Color color, Robot rob){
+		this.rob = rob;
+
 		Color ghostColor = color;
-		ghostColor.a = 0.4f;
+		ghostColor.a = 1f;
 		foreach (SpriteRenderer sr in srs) {
 			sr.color = ghostColor;
 

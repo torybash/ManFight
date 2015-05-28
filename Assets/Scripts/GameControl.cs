@@ -20,16 +20,21 @@ public class GameControl : MonoBehaviour {
 
 	bool[] playersEndedTurn;
 
-	List<RobotCommand>[] allPlayerRobotCommands;
+	List<ServerRobotCommand>[] allPlayerRobotCommands;
 
 	Dictionary<int, Robot>[] playerRobots;
+
+
+//	delegate void State();
+//	State prepState;
+//	State playoutState;
 
 	public bool playingOutCommands = false;
 	public float playoutTimer = 0;
 
 
 	//Constants
-	const float playoutDuration = 10f;
+	public float playoutDuration = 10f;
 	const float movesPerSec = 2f;
 
 	void Awake () {
@@ -125,10 +130,10 @@ public class GameControl : MonoBehaviour {
 
 		int playerCount = netManCtrl.GetPlayers().Count;
 		playersEndedTurn = new bool[playerCount];
-		allPlayerRobotCommands = new List<RobotCommand>[playerCount];
+		allPlayerRobotCommands = new List<ServerRobotCommand>[playerCount];
 		playerRobots = new Dictionary<int, Robot>[playerCount];
 		for (int i = 0; i < playerCount; i++) {
-			allPlayerRobotCommands[i] = new List<RobotCommand>();
+			allPlayerRobotCommands[i] = new List<ServerRobotCommand>();
 			playerRobots[i] = new Dictionary<int, Robot>();
 		}
 
@@ -147,7 +152,12 @@ public class GameControl : MonoBehaviour {
 	public void PlayerHasEndedTurn(int playerID, List<RobotCommand> robotCommands){
 //		Debug.Log("PlayerHasEndedTurn - playerGUID: " + playerGUID);
 		playersEndedTurn[playerID] = true;
-		allPlayerRobotCommands[playerID] = robotCommands;
+
+		List<ServerRobotCommand> srvRobotCommands = new List<ServerRobotCommand>();
+		foreach (RobotCommand robCmd in robotCommands) {
+			srvRobotCommands.Add(new ServerRobotCommand(robCmd));
+		}
+		allPlayerRobotCommands[playerID] = srvRobotCommands;
 		CheckForEndTurn();
 	}
 
@@ -161,7 +171,6 @@ public class GameControl : MonoBehaviour {
 
 
 	public void PlayerRobotPlaced(string playerGUID, int roboID, int x, int y){
-		Debug.Log("PlayerRobotPlaced");
 		int playerID = netManCtrl.playersGUIDToIDDict[playerGUID];
 		Robot rob = playerRobots[playerID][roboID];
 		rob.SetPosition(x, y);

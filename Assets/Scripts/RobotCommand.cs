@@ -9,28 +9,18 @@ public class RobotCommand {
 	public int robotID;
 	public List<Command> turnCommands = new List<Command>();
 
-	public int playbackCmdID = 0;
 
+
+	public RobotCommand(){}
 
 	public RobotCommand(int robotID){
 		this.robotID = robotID;
-//		this.ownerId = ownerId;
 	}
 
 
 
-	public void AddCommand(Command cmd, Vector2 pos){
-		
-	}
-
-	public void AddCommand(Command cmd, float val){
-		
-	}
-
-
-	public Command GetCurrentCommand(){
-		if (playbackCmdID >= turnCommands.Count) return Command.NONE;
-		return turnCommands[playbackCmdID];
+	public void AddCommand(Command cmd){
+		turnCommands.Add(cmd);
 	}
 	
 
@@ -38,26 +28,26 @@ public class RobotCommand {
 	public static float MoveCommandsDuration(List<Vector2> commandList, RobotHeight robotHeight){
 		float duration = 0;
 		foreach (var item in commandList) {
-			duration += CommandDuration(Command.MOVE_TO, robotHeight);
+			duration += CommandDuration(CommandType.MOVE_TO, robotHeight);
 		}
 
 		return duration;
 	}
 
-	public static float CommandDuration(Command cmd, RobotHeight rHeight){
+	public static float CommandDuration(CommandType cmd, RobotHeight rHeight){
 		switch (cmd) {
-		case Command.MOVE_TO:
+		case CommandType.MOVE_TO:
 			if (rHeight == RobotHeight.HIGH) return 0.5f;
 			else return 0.8f;
-		case Command.GUARD:
+		case CommandType.GUARD:
 			return 0.5f;
-		case Command.SET_ANGLE:
+		case CommandType.SET_ANGLE:
 			return 0.0f;
-		case Command.CHANGE_WEAPON:
+		case CommandType.CHANGE_WEAPON:
 			return 0.2f;
-		case Command.CHANGE_HEIGHT:
+		case CommandType.CHANGE_HEIGHT:
 			return 0.1f;
-		case Command.AGG_MOVE_TO:
+		case CommandType.AGG_MOVE_TO:
 			if (rHeight == RobotHeight.HIGH) return 0.5f;
 			else return 0.8f;
 		default:
@@ -70,22 +60,59 @@ public class RobotCommand {
 }
 
 
+public class ServerRobotCommand : RobotCommand{
+	public int playbackCmdID;
+	
+	public Command lastCmd;
+	
+	public List<Vector2> currPath;
+	public int currPathIncr;
+	public Vector2 currPathNextPos;
 
-//[Serializable]
-//public enum Command : byte{
-//	MOVE_RIGHT,
-//	MOVE_LEFT,
-//	MOVE_UP,
-//	MOVE_DOWN,
-//	GUARD_RIGHT,
-//	GUARD_LEFT,
-//	GUARD_UP,
-//	GUARD_DOWN,
-//	NONE
-//}
+
+
+//	public ServerRobotCommand(int robotID){
+//
+//		this.robotID = robotID;
+//		//		this.ownerId = ownerId;
+//		playbackCmdID = -1;
+//		lastCmd = null;
+//	}
+
+	public ServerRobotCommand(RobotCommand robCmd){
+		this.robotID = robCmd.robotID;
+		this.turnCommands = robCmd.turnCommands;
+
+		playbackCmdID = -1;
+		lastCmd = null;
+	}
+
+	public Command GetCurrentCommand(){
+		if (playbackCmdID < 0) return null; //<-- first command
+		if (playbackCmdID >= turnCommands.Count) return new Command(CommandType.GUARD, -1, -1, 99999f); //Guard rest of turn
+		return turnCommands[playbackCmdID];
+	}
+
+}
+
 
 [Serializable]
-public enum Command : byte{
+public class Command{
+
+	public CommandType cmdTyp;
+	public int goalPosX, goalPosY;
+	public float val;
+
+	public Command(CommandType cmdTyp, int goalPosX, int goalPosY, float val){
+		this.cmdTyp = cmdTyp;
+		this.goalPosX = goalPosX;
+		this.goalPosY = goalPosY;
+		this.val = val;
+	}
+}
+
+[Serializable]
+public enum CommandType : byte{
 	MOVE_TO,
 	AGG_MOVE_TO,
 	GUARD,
