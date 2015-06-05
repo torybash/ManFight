@@ -174,6 +174,8 @@ public class GameControl : MonoBehaviour {
 		int playerID = netManCtrl.playersGUIDToIDDict[playerGUID];
 		Robot rob = playerRobots[playerID][roboID];
 		rob.SetPosition(x, y);
+
+		netManCtrl.UpdateRobotForPlayer(playerGUID, roboID);
 	}
 
 

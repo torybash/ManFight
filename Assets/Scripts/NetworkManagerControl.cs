@@ -156,6 +156,12 @@ public class NetworkManagerControl : MonoBehaviour {
 	}
 
 
+
+	public void UpdateRobotForPlayer(string playerGUID, int roboID){
+		netView.RPC("RPCUpdateRobotForPlayer", RPCMode.AllBuffered, playerGUID, roboID);
+	}
+
+
 //	IEnumerator SendSpawnedRobotForPlayer(Robot robot, NetworkPlayerInfo player){
 //		yield return null;
 //		netView.RPC("RPCSpawnedRobotForPlayer", RPCMode.AllBuffered, robot.netView.viewID, player.netView.owner);
@@ -187,6 +193,8 @@ public class NetworkManagerControl : MonoBehaviour {
 		if (!Network.isServer) return;
 
 		gameCtrl.PlayerRobotPlaced(playerGUID, roboID, x, y);
+
+
 	}
 
 	[RPC]
@@ -219,6 +227,12 @@ public class NetworkManagerControl : MonoBehaviour {
 		if (turn == 1) guiCtrl.UpdateRobotPlacingMenu();
 	}
 
+	[RPC]
+	void RPCUpdateRobotForPlayer(string playerGUID, int roboID){
+		if (Network.player.guid.Equals(playerGUID)){
+			rCmdCtrl.controlledRobots[roboID].Placed();
+		}
+	}
 
 
 //	void OnGUI(){

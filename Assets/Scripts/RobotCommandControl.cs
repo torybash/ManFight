@@ -7,7 +7,7 @@ public class RobotCommandControl : MonoBehaviour {
 	//References
 	Robot selectedRobot;
 //	Transform currRobotGhost;
-	Dictionary<int, Transform> currRobotGhosts = new Dictionary<int, Transform>();
+	Dictionary<int, RobotGhost> currRobotGhosts = new Dictionary<int, RobotGhost>();
 	Transform selectorTrans;
 	LevelControl lvlCtrl;
 	GameControl gameCtrl;
@@ -81,15 +81,12 @@ public class RobotCommandControl : MonoBehaviour {
 		}
 
 		selectedRobot = rob;
-		SetSelector(Tools.CleanPos(selectedRobot.transform.position));
-		guiCtrl.UpdateSelectedRobot(selectedRobot);
 
-
-		guiCtrl.PrepTimerChanged(prepTimer);
-//		UpdatePrepValues(prepTimer);
 		UpdateAllRobotsPrepValues();
 
-//		rob.UpdatePrepValues(prepTimer);
+		guiCtrl.UpdateSelectedRobot(selectedRobot);
+		guiCtrl.PrepTimerChanged(prepTimer);
+		SetSelector(Tools.CleanPos(selectedRobot.ghostPos));
 	}
 
 	void UpdateAllRobotsPrepValues(){
@@ -135,6 +132,7 @@ public class RobotCommandControl : MonoBehaviour {
 		//Add commands 
 		Vector2 simulPos = selectedRobot.ghostPos;
 		float simulTime = prepTimer;
+		float endRot = selectedRobot.ghostRot;
 		foreach (Vector2 move in commandList) {
 //			Vector2 lastPos = simulPos;
 			simulPos += move;
@@ -148,21 +146,26 @@ public class RobotCommandControl : MonoBehaviour {
 
 		//Update prep timer and prep values
 		UpdatePrepValues(prepTimer + timeForMove);
-//		selectedRobot.robotPrepTimer = prepTimer;
+		selectedRobot.robotPrepTimer = prepTimer;
 
 		//Visual stuff (and ghostPos)
 		guiCtrl.UpdateSelectedRobot(selectedRobot);
 		pathArwCtrl.UpdatePath(selectedRobot, commandList, isOverriding);
-		SetGhostPosition(selectedRobot, endPos);
+		SetGhost(selectedRobot, endPos, endRot);
+		SetSelector(Tools.CleanPos(selectedRobot.ghostPos));
 	}
 
-	public void SetGhostPosition(Robot rob, Vector2 pos)
+	public void SetGhost(Robot rob, Vector2 pos, float angle)
 	{
 		rob.ghostPos = pos;
+		rob.ghostRot = angle;
 		int robID = rob.robotID;
-		if (!currRobotGhosts.ContainsKey(robID)) currRobotGhosts.Add(robID, (Transform) Instantiate(robotGhostPrefab));
-		currRobotGhosts[robID].GetComponent<RobotGhost>().Init(rob.color, rob);
-		currRobotGhosts[robID].position = pos;
+
+		if (!currRobotGhosts.ContainsKey(robID)){
+			RobotGhost ghost = ((Transform) Instantiate(robotGhostPrefab)).GetComponent<RobotGhost>();
+            currRobotGhosts.Add(robID, ghost);
+		}
+		currRobotGhosts[robID].Refresh(rob.color, rob, pos, angle);
 	}
 
 	void UpdatePrepValues(float newPrepTime)
@@ -255,7 +258,7 @@ public class RobotCommandControl : MonoBehaviour {
 			selectorTrans.gameObject.SetActive(false);
 //			currRobotGhost.gameObject.SetActive(false);
 
-			foreach (Transform roboGhost in currRobotGhosts.Values) {
+			foreach (RobotGhost roboGhost in currRobotGhosts.Values) {
 				GameObject.Destroy(roboGhost.gameObject);
 			}
 			currRobotGhosts.Clear();

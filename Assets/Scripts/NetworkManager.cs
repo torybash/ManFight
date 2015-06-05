@@ -47,7 +47,9 @@ public class NetworkManager : MonoBehaviour {
 #endif
 	}
 
-
+	void Start(){
+		RefreshHostList();
+	}
 
 	void Update(){
 		if (!gameStarted) return;
@@ -83,6 +85,8 @@ public class NetworkManager : MonoBehaviour {
 
 	
 	public void StartGame(){
+		MasterServer.UnregisterHost();
+
 		netView.RPC("GameStarted", RPCMode.Others);
 		GameStarted();
 	}

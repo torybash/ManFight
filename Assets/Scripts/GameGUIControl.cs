@@ -107,7 +107,8 @@ public class GameGUIControl : MonoBehaviour {
 				if (lvlCtrl.IsValidRobotPlacement(x, y)){
 					rCmdCtrl.CheckForAllRobotsPlaced();
 					netManCtrl.RobotPlaced(floatingRobot, x, y);
-					floatingRobot.Placed(x, y);
+//					floatingRobot.Placed(x, y);
+					lvlCtrl.RobotAddedTo(x, y);
 				}else{
 					floatingRobot.needPlacing = true;
 					UpdateRobotPlacingMenu();

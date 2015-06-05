@@ -130,14 +130,13 @@ public class LevelControl : MonoBehaviour {
 		
 		Node startNode = new Node((int)startPos.x, (int)startPos.y, 0, null);
 
-
 		HashSet<Node> closedNodes = new HashSet<Node>();
-		HeapPriorityQueue<Node> q = new HeapPriorityQueue<Node>(100000);
+		HeapPriorityQueue<Node> q = new HeapPriorityQueue<Node>(10000);
         List<Vector2> path = null;                            
 
 		q.Enqueue(startNode, AStarHeuristic(startNode.x, startNode.y, goalPosX, goalPosY));
 
-		while (q.Count > 0){
+		while (q.Count > 0 && q.Count < q.MaxSize - 5){
 
 			Node currNode = q.Dequeue();
 //			print ("currNode: " + currNode.x + ", " + currNode.y + " - moves: " + currNode.g + ", h: " + AStarHeuristic(currNode.x, currNode.y, goalPosX, goalPosY) + ", prio: " + currNode.Priority); 
@@ -247,9 +246,13 @@ public class LevelControl : MonoBehaviour {
 		int playerID = netManCtrl.localPlayer.playerID;
 
 		MapTile tile = currLvl[x][y];
-		foreach (SpriteType sp in tile.sprites) if (sp == SpriteType.ROCK) return false;
+		foreach (SpriteType sp in tile.sprites) if (sp == SpriteType.ROCK || sp == SpriteType.ROBOT) return false;
 		if (tile.playerID != playerID) return false;
 		return true;
+	}
+
+	public void RobotAddedTo(int x, int y){
+//		currLvl[x][y].sprites.Add(SpriteType.ROBOT);
 	}
 }
 
@@ -286,5 +289,6 @@ public enum SpriteType{
 	ROCK,
 	STARTING_POS,
 	STARTING_FIELD,
+	ROBOT,
 	EMPTY
 }

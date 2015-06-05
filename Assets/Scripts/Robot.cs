@@ -50,6 +50,7 @@ public class Robot : MonoBehaviour {
 	public float robotPrepTimer;
 	public RobotHeight prepRobotHeight;
 
+	public float ghostRot;
 	public Vector2 ghostPos = Vector2.zero;
 
 	public Vector2 startTurnPos = Vector2.zero;
@@ -74,12 +75,12 @@ public class Robot : MonoBehaviour {
 	//GENERAL
 	public void TurnStarted()
 	{
-		ghostPos = pos;
+		transform.position = Tools.CleanPos(transform.position);
 		startTurnPos = pos;
 
 		robotCommand = new RobotCommand(robotID);
 		robotHistory.Clear();
-		rCmdCtrl.SetGhostPosition(this, Tools.CleanPos(transform.position));
+		rCmdCtrl.SetGhost(this, pos, currAngle);
 	}	
 
 
@@ -99,16 +100,17 @@ public class Robot : MonoBehaviour {
 		rCmdCtrl.AddRobot(this);
 	}
 
-	public void Placed(int x, int y){
+	public void Placed(){
+		Debug.Log("Robot " + robotID + " placed (name: " + robName + ") , pos: " + pos);
+
 		needPlacing = false;
 		robotVision.Enabled(true);
 		ForceUpdateVisibility();
 
-		Vector2 pos = Tools.CleanPos(new Vector2(x, y));
 		ghostPos = pos;
 		startTurnPos = pos;
 
-		rCmdCtrl.SetGhostPosition(this, pos);
+		rCmdCtrl.SetGhost(this, pos, currAngle);
 
 		EnableTransparency(true);
 
@@ -138,6 +140,7 @@ public class Robot : MonoBehaviour {
 		if (setTime) robotPrepTimer = prepTimer;
 
 		Vector2 newGhostPos = ghostPos;
+		float newGhostRot = ghostRot;
 		RobotHistory lastStory = new RobotHistory(0, startTurnPos);
 		foreach (RobotHistory robHist in robotHistory) {
 
@@ -159,7 +162,7 @@ public class Robot : MonoBehaviour {
 
 		Debug.Log("UpdatePrepValues - newGhostPos: " + newGhostPos + ", ghostPosition: " + ghostPos + ", robotHistory: " + robotHistory.Count);
 
-		rCmdCtrl.SetGhostPosition(this, newGhostPos);
+		rCmdCtrl.SetGhost(this, newGhostPos, newGhostRot); //TODO Simulate angle!
 
 		//Simulate from start
 //		Vector2 simulPos = pos;

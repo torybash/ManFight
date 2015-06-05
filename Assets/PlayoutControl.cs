@@ -24,7 +24,7 @@ public class PlayoutControl : MonoBehaviour {
 
 //		int moveIdx = (int) ((playoutDuration - playoutTimer) * movesPerSec);
 		
-		
+		bool allRobotsDone = true;
 		for (int playerID = 0; playerID < allPlayerRobotCommands.Length; playerID++) { //Fore player
 			List<ServerRobotCommand> playerRobotCommands = allPlayerRobotCommands[playerID];
 			foreach (ServerRobotCommand robotCmd in playerRobotCommands) {
@@ -57,13 +57,22 @@ public class PlayoutControl : MonoBehaviour {
 
 
 				//Detect and shoot at enemies
+				bool hasTarget = false;
 				if (currCmd.cmdTyp == CommandType.AGG_MOVE_TO || currCmd.cmdTyp == CommandType.GUARD){
 
 				}
+
+				//Check if robot is "done"
+				if (!hasTarget && robotCmd.IsOnLastCommand() && currCmd.cmdTyp == CommandType.GUARD && currCmd.val > 1000){
+
+				}else{
+					allRobotsDone = false;
+				}
+
 			}
 		}
 
-		if (playoutTimer < 0)
+		if (allRobotsDone)
 		{
 			gameCtrl.PlayedOutCommands();
 		}

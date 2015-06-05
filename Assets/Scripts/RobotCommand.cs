@@ -93,6 +93,12 @@ public class ServerRobotCommand : RobotCommand{
 		return turnCommands[playbackCmdID];
 	}
 
+
+	public bool IsOnLastCommand(){
+		if (playbackCmdID >= turnCommands.Count) return true;
+		return false;
+	}
+
 }
 
 
