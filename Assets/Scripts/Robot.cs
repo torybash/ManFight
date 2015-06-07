@@ -135,7 +135,7 @@ public class Robot : MonoBehaviour {
 
 	public void UpdatePrepValues(float prepTimer, bool setTime = false)
 	{
-		Debug.Log("/////////////////UpdatePrepValues///////////// --- prepTimer: " + prepTimer + " --- id: " + robotID);
+//		Debug.Log("/////////////////UpdatePrepValues///////////// --- prepTimer: " + prepTimer + " --- id: " + robotID);
 	
 		if (setTime) robotPrepTimer = prepTimer;
 
@@ -144,7 +144,7 @@ public class Robot : MonoBehaviour {
 		RobotHistory lastStory = new RobotHistory(0, startTurnPos);
 		foreach (RobotHistory robHist in robotHistory) {
 
-			Debug.Log("robHist: " + robHist.pos + ", " + robHist.time);
+//			Debug.Log("robHist: " + robHist.pos + ", " + robHist.time);
 
 			if (robHist.time >= prepTimer){
 				if (robHist.time == prepTimer){
@@ -160,7 +160,7 @@ public class Robot : MonoBehaviour {
 			lastStory.pos = robHist.pos;
 		}
 
-		Debug.Log("UpdatePrepValues - newGhostPos: " + newGhostPos + ", ghostPosition: " + ghostPos + ", robotHistory: " + robotHistory.Count);
+//		Debug.Log("UpdatePrepValues - newGhostPos: " + newGhostPos + ", ghostPosition: " + ghostPos + ", robotHistory: " + robotHistory.Count);
 
 		rCmdCtrl.SetGhost(this, newGhostPos, newGhostRot); //TODO Simulate angle!
 

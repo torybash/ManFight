@@ -168,7 +168,7 @@ public class RobotCommandControl : MonoBehaviour {
 		currRobotGhosts[robID].Refresh(rob.color, rob, pos, angle);
 	}
 
-	void UpdatePrepValues(float newPrepTime)
+	public void UpdatePrepValues(float newPrepTime)
 	{
 		prepTimer = newPrepTime;
 		UpdateAllRobotsPrepValues();

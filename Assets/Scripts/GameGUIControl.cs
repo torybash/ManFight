@@ -44,6 +44,8 @@ public class GameGUIControl : MonoBehaviour {
 
 	bool endTurnClicked = false;
 
+	bool justAdjustedPrepTimerFromCommand = false;
+
 	void Awake () {
 		gameCtrl = GetComponent<GameControl>();
 		netManCtrl = GetComponent<NetworkManagerControl>();
@@ -149,9 +151,24 @@ public class GameGUIControl : MonoBehaviour {
 //	}
 
 	public void PrepTimerSliderChanged(){
+		if (justAdjustedPrepTimerFromCommand){
+			justAdjustedPrepTimerFromCommand = false;
+			return;
+		}
 //		prepTimerSlider
-		rCmdCtrl.prepTimer = prepTimerSlider.value;
-		prepTimerText.text = "Time: " + prepTimerSlider.value;
+		if (rCmdCtrl.prepTimer * 10 == prepTimerSlider.value) return;
+
+		Debug.Log("PrepTimerSliderChanged - time: " + Time.time);
+
+
+		float newPrepTime = prepTimerSlider.value;
+		newPrepTime /= 10;
+		prepTimerText.text = "Time: " + newPrepTime;
+
+		rCmdCtrl.UpdatePrepValues(newPrepTime);
+//		rCmdCtrl.prepTimer = newPrepTime;
+//		rCmdCtrl.UpdateAllRobotsPrepValues();
+//		rCmdCtrl.
 	}
 
 
@@ -171,8 +188,10 @@ public class GameGUIControl : MonoBehaviour {
 
 	//IN
 	public void PrepTimerChanged(float timer){
-		prepTimerSlider.value = timer;
+		prepTimerSlider.value = timer * 10;
 		prepTimerText.text = "Time: " + timer;
+
+		justAdjustedPrepTimerFromCommand = true;
 	}
 
 	public void TurnStarted(int turn){
