@@ -247,6 +247,22 @@ public class RobotCommandControl : MonoBehaviour {
 	}
 
 
+
+
+
+	public void RobotDestroyed(int robID){
+
+		foreach (Robot rob in controlledRobots) {
+			if (rob.robotID == robID){
+				controlledRobots.Remove(rob);
+				break;
+			}
+		}
+
+
+	}
+
+
 	public void Enable(bool on){
 		this.on = on;
 		if (on){

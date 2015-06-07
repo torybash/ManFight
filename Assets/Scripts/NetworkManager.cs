@@ -1,4 +1,4 @@
-﻿//#define torybashPCMaster
+﻿#define torybashPCMaster
 
 
 using UnityEngine;
@@ -75,6 +75,8 @@ public class NetworkManager : MonoBehaviour {
 
 	public void RefreshHostList(){
 		Debug.Log("Refreshing host list");
+		MasterServer.ClearHostList();
+
 		MasterServer.RequestHostList(typeName);
 	}
 

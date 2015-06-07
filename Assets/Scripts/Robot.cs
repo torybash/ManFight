@@ -24,24 +24,27 @@ public class Robot : MonoBehaviour {
 	public string robName = "UNNAMED ROBOT";
 	public int maxMoves = 15;
 	public int range = 10;
-	public int weaponDmg = 1;
-	public float weaponCooldown = 0.5f;
-	public int hp = 10;
+	public int weaponDmg = 2;
+	public float weaponCooldown = 1.0f;
 	public float speed = 4f;
+	public int initHP = 10;
 
 
 	public int robotID = -1;
+
+	public int playerId;
 
 	public RobotHeight robotHeight = RobotHeight.HIGH;
 
 
 	RobotCommandControl rCmdCtrl;
+	GameControl gameCtrl;
 
 	bool isMine;
 
 
-	float currAngle;
-	float goalAngle;
+	public float currAngle;
+	public float goalAngle;
 
 
 	//Preperation
@@ -58,7 +61,9 @@ public class Robot : MonoBehaviour {
 
 	public List<RobotHistory> robotHistory = new List<RobotHistory>();
 	
-
+	//Playout
+	public float shootCooldown;
+	public int hp;
 
 
 	public Vector2 pos {
@@ -87,9 +92,12 @@ public class Robot : MonoBehaviour {
 
 
 	//PLAYER
-	void Init(int robotID)
+	void Init(int playerId, int robotID)
 	{
 		robName = "Robot " + (robotID + 1);
+		this.playerId = playerId;
+
+		hp = initHP;
 
 		this.robotID = robotID;
 		needPlacing = true;
@@ -97,11 +105,14 @@ public class Robot : MonoBehaviour {
 		robotCommand = new RobotCommand(robotID);
 
 		rCmdCtrl = GameObject.Find("GameScripts").GetComponent<RobotCommandControl>();
+		gameCtrl = GameObject.Find("GameScripts").GetComponent<GameControl>();
 		rCmdCtrl.AddRobot(this);
 	}
 
-	public void Placed(){
-		Debug.Log("Robot " + robotID + " placed (name: " + robName + ") , pos: " + pos);
+	public void Placed(int x, int y){
+		Debug.Log("Robot " + robotID + " placed (name: " + robName + ") , pos: " + pos + ", time: " + Network.time);
+
+		transform.position = Tools.CleanPos(new Vector2(x, y));
 
 		needPlacing = false;
 		robotVision.Enabled(true);
@@ -116,6 +127,7 @@ public class Robot : MonoBehaviour {
 
 		Debug.Log("Placed - startTurnPos: " + startTurnPos);
 	}
+
 
 	void EnableTransparency(bool on){
 		Color col = color;
@@ -197,15 +209,17 @@ public class Robot : MonoBehaviour {
 	}
 
 	//SERVER
-	public void ServerInit(int robotID, Color clr, string ownerGUID){
+	public void ServerInit(int robotID, Color clr, int playerId, string ownerGUID){
 		this.robotID = robotID;
 		foreach (SpriteRenderer sr in srs) {
 			sr.color = clr;
 		}
-		netView.RPC("RPCInit", RPCMode.AllBuffered, robotID, clr.r, clr.g, clr.b, ownerGUID);
+		netView.RPC("RPCInit", RPCMode.AllBuffered, playerId, robotID, clr.r, clr.g, clr.b, ownerGUID);
 	}
 	
-	public void SetPosition(int x, int y){
+	public void SetPosition(int x, int y)
+	{
+		Debug.Log("Server - set rob " + robotID + " from pos " + pos + ", to: " + x + ", " +  y + ", time: " + Network.time);
 		transform.position = Tools.CleanPos(new Vector2(x, y));
 		ghostPos = transform.position;
 	}
@@ -216,17 +230,22 @@ public class Robot : MonoBehaviour {
 	}
 
 
-	public void PlayoutUpdate(){
-		if (currAngle != goalAngle){
-			currAngle = Mathf.MoveTowardsAngle(currAngle, goalAngle, 45.00f * Time.fixedDeltaTime);
-
-			gunTurretContainer.rotation = Quaternion.AngleAxis(currAngle, Vector3.forward);
-		}
+	public void UpdateGunRotation(){
+		gunTurretContainer.rotation = Quaternion.AngleAxis(currAngle, Vector3.forward);
 	}
+
+
+//	public void PlayoutUpdate(){
+//		if (currAngle != goalAngle){
+//			currAngle = Mathf.MoveTowardsAngle(currAngle, goalAngle, 45.00f * Time.fixedDeltaTime);
+//
+//			gunTurretContainer.rotation = Quaternion.AngleAxis(currAngle, Vector3.forward);
+//		}
+//	}
 
 	//RPC
 	[RPC]
-	public void RPCInit(int robotID, float r, float g, float b, string ownerGUID){ 
+	public void RPCInit(int playerId, int robotID, float r, float g, float b, string ownerGUID){ 
 //		Debug.Log("RPCInit (Robot) - rgb: "+  r + ", " + g + ", " + b + ", robotID: " + robotID + ", ownerGUID: " + ownerGUID);
 
 		color = new Color(r, g, b);
@@ -237,7 +256,7 @@ public class Robot : MonoBehaviour {
 		//IS MINE?
 		if (ownerGUID.Equals(Network.player.guid)){
 			isMine = true;
-			Init(robotID);
+			Init(playerId, robotID);
 		}
 
 
@@ -262,6 +281,32 @@ public class Robot : MonoBehaviour {
 //		GameControl gameCtrl = GameObject.Find("GameScripts").GetComponent<GameControl>();
 //
 //		gameCtrl.AddPlayerRobot(this, netView.owner.guid);
+	}
+
+
+
+	void OnTriggerEnter2D(Collider2D other){
+		Debug.Log("OnTriggerEnter2D - isServer?: "+  Network.isServer);
+
+		if (!Network.isServer) return;
+
+		if (this == null || gameCtrl == null) return;
+
+		if (other.tag.Equals("Bullet")){
+
+			Bullet bullet = other.GetComponent<Bullet>();
+
+			if (bullet.playerID == playerId) return;
+
+			hp -= bullet.dmg;
+			if (hp < 0){
+				gameCtrl.DestroyRobot(this);
+			}
+
+			Network.Destroy(other.gameObject);
+
+
+		}
 	}
 }
 

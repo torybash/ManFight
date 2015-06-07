@@ -13,5 +13,7 @@ public class RobotStream : MonoBehaviour {
 			stream.Serialize(ref pos);
 			transform.position = pos;
 		}
+
+//		Debug.Log("OnSerializeNetworkView - transform.position: " + transform.position);
 	}
 }

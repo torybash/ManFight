@@ -175,12 +175,26 @@ public class GameControl : MonoBehaviour {
 		Robot rob = playerRobots[playerID][roboID];
 		rob.SetPosition(x, y);
 
-		netManCtrl.UpdateRobotForPlayer(playerGUID, roboID);
+		netManCtrl.UpdateRobotForPlayer(playerGUID, roboID, x, y);
 	}
 
 
 
+	public void DestroyRobot(Robot rob){
 
+		playerRobots[rob.playerId].Remove(rob.robotID);
+
+		foreach (ServerRobotCommand item in allPlayerRobotCommands[rob.playerId]) {
+			if (item.robotID == rob.robotID){
+				allPlayerRobotCommands[rob.playerId].Remove(item);
+				break;
+			}
+		}
+
+		netManCtrl.RobotDestroyed(rob);
+
+		Network.Destroy(rob.gameObject);
+	}
 
 
 

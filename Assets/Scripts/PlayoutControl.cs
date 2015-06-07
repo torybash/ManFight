@@ -4,6 +4,8 @@ using System.Collections.Generic;
 
 public class PlayoutControl : MonoBehaviour {
 
+	[SerializeField] Transform bulletPrefab;
+
 	GameControl gameCtrl;
 	LevelControl lvlCtrl;
 
@@ -52,15 +54,46 @@ public class PlayoutControl : MonoBehaviour {
 				PerformCommand(robot, robotCmd, currCmd);
 
 				
-				//Rotate aiming (and other stuff?)
-				robot.PlayoutUpdate();
+
 
 
 				//Detect and shoot at enemies
 				bool hasTarget = false;
 				if (currCmd.cmdTyp == CommandType.AGG_MOVE_TO || currCmd.cmdTyp == CommandType.GUARD){
+					Robot closestRob = DetectEnemyRobots(robot, playerID, playerRobots);
 
+					if (closestRob != null){
+						hasTarget = true;
+						Debug.DrawLine(robot.pos, closestRob.pos);
+
+						//If not rotated, rotate towards enemy
+						Vector2 diffVec = closestRob.pos - robot.pos;
+						float angle = Mathf.Atan2(diffVec.y, diffVec.x) * Mathf.Rad2Deg - 90f;
+
+						if (Mathf.DeltaAngle(robot.currAngle, angle) > 2f){
+							robot.currAngle = Mathf.MoveTowardsAngle(robot.currAngle, angle, 90f * Time.fixedDeltaTime);
+							robot.UpdateGunRotation();
+						}else{
+							robot.currAngle = Mathf.MoveTowardsAngle(robot.currAngle, angle, 90f * Time.fixedDeltaTime);
+							robot.UpdateGunRotation();
+							if (robot.shootCooldown < 0){ //If rotated, check if gun cooldowned
+								//If cooldowned, shoot
+								Bullet bullet = ((Transform)Network.Instantiate(bulletPrefab, robot.pos, Quaternion.identity, 0)).GetComponent<Bullet>();
+								bullet.Init(playerID, robot.robotID, robot.weaponDmg, angle);
+
+								robot.shootCooldown = robot.weaponCooldown;
+							}
+						}
+					}
 				}
+
+				//Rotate aiming (when no target)
+				if (!hasTarget && robot.currAngle != robot.goalAngle){
+					robot.currAngle = Mathf.MoveTowardsAngle(robot.currAngle, robot.goalAngle, 90f * Time.fixedDeltaTime);
+					
+					robot.UpdateGunRotation();
+				}
+
 
 				//Check if robot is "done"
 				if (!hasTarget && robotCmd.IsOnLastCommand() && currCmd.cmdTyp == CommandType.GUARD && currCmd.val > 1000){
@@ -69,6 +102,8 @@ public class PlayoutControl : MonoBehaviour {
 					allRobotsDone = false;
 				}
 
+				//Change timer(s)
+				robot.shootCooldown -= Time.fixedDeltaTime;
 			}
 		}
 
@@ -79,7 +114,33 @@ public class PlayoutControl : MonoBehaviour {
 
 	}
 
+	Robot DetectEnemyRobots(Robot robot, int playerID, Dictionary<int, Robot>[] playerRobots)
+	{
+		float range = robot.range;
 
+		float closestDist = float.MaxValue;
+		Robot closestRobot = null;
+
+		for (int id = 0; id < playerRobots.Length; id++) {
+			if (playerID == id) continue;
+
+			foreach (var item in playerRobots[id]) {
+				Robot rob = item.Value;
+
+				float dist = Vector2.Distance(robot.pos, rob.pos);
+
+				if (dist < range && dist < closestDist){
+					closestDist = dist;
+					closestRobot = rob;
+				}
+			}
+		}
+
+		//TODO CHECK IF ACTUALLY VISIBLE THROUGH FOG
+
+
+		return closestRobot;
+	}
 
 	bool IsDoneWithCommand(Robot rob, ServerRobotCommand robCmd, Command cmd){
 
@@ -126,6 +187,9 @@ public class PlayoutControl : MonoBehaviour {
 //			float timeForGuarding = cmd.val;
 			
 			break;
+		case CommandType.SET_ANGLE:
+			rob.SetGoalAngle(cmd.val);
+			break;
 		default:
 			break;
 		}
@@ -169,8 +233,13 @@ public class PlayoutControl : MonoBehaviour {
 			
 			break;
 		case CommandType.SET_ANGLE:
-			rob.SetGoalAngle(cmd.val);
-
+//			if (rob.currAngle != rob.goalAngle){
+//				rob.currAngle = Mathf.MoveTowardsAngle(rob.currAngle,rob. goalAngle, 90f * Time.fixedDeltaTime);
+//				
+//				rob.UpdateGunRotation();
+//			}
+////			rob.SetGoalAngle(cmd.val);
+//
 			break;
 		default:
 			break;

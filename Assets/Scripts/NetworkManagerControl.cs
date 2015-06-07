@@ -128,8 +128,8 @@ public class NetworkManagerControl : MonoBehaviour {
 		netView.RPC("RPCTurnStarted", RPCMode.AllBuffered, turn);
 	}
 
-	public void SpawnRobotsForPlayer(int playerIdx, int robotCnt){
-		NetworkPlayerInfo player = netPlayers[playerIdx];
+	public void SpawnRobotsForPlayer(int playerId, int robotCnt){
+		NetworkPlayerInfo player = netPlayers[playerId];
 
 //		Debug.Log("SpawnRobotsForPlayer - playerIdx: " + playerIdx + ", player.color: " + player.color);
 
@@ -138,11 +138,11 @@ public class NetworkManagerControl : MonoBehaviour {
 //		Vector3 spawnPos = Tools.AddHalf(new Vector3((int)player.initPos.x, (int)player.initPos.y, 0));
 		Vector3 spawnPos = new Vector3(-100, -100, 0);
 
-		Color clr = PlayerHelper.IDToColor(playerIdx);
+		Color clr = PlayerHelper.IDToColor(playerId);
 
 		for (int i = 0; i < robotCnt; i++) {
 			Robot robot = ((Transform)Network.Instantiate(robotPrefab, spawnPos, Quaternion.identity, (int)NetGroup.DEFAULT)).GetComponent<Robot>();
-			robot.ServerInit(player.robotIDIncr++, clr, playersIDToGUID[playerIdx]);
+			robot.ServerInit(player.robotIDIncr++, clr, playerId, playersIDToGUID[playerId]);
 
 			gameCtrl.AddPlayerRobot(robot, player.netView.owner.guid);
 		}
@@ -157,8 +157,13 @@ public class NetworkManagerControl : MonoBehaviour {
 
 
 
-	public void UpdateRobotForPlayer(string playerGUID, int roboID){
-		netView.RPC("RPCUpdateRobotForPlayer", RPCMode.AllBuffered, playerGUID, roboID);
+	public void UpdateRobotForPlayer(string playerGUID, int roboID, int x, int y){
+		netView.RPC("RPCUpdateRobotForPlayer", RPCMode.AllBuffered, playerGUID, roboID, x, y);
+	}
+
+
+	public void RobotDestroyed(Robot rob){
+		netView.RPC("RPCRobotDestroyed", RPCMode.AllBuffered, playersIDToGUID[rob.playerId], rob.robotID);
 	}
 
 
@@ -187,6 +192,13 @@ public class NetworkManagerControl : MonoBehaviour {
 //			rCmdCtrl.AddRobot(robot);
 //		}
 //	}
+
+	[RPC]
+	void RPCRobotDestroyed(string playerGUID, int roboID){
+		if (Network.player.guid.Equals(playerGUID)){
+			rCmdCtrl.RobotDestroyed(roboID);
+		}
+	}
 
 	[RPC]
 	void RPCRobotPlaced(string playerGUID, int roboID, int x, int y){
@@ -228,9 +240,9 @@ public class NetworkManagerControl : MonoBehaviour {
 	}
 
 	[RPC]
-	void RPCUpdateRobotForPlayer(string playerGUID, int roboID){
+	void RPCUpdateRobotForPlayer(string playerGUID, int roboID, int x, int y){
 		if (Network.player.guid.Equals(playerGUID)){
-			rCmdCtrl.controlledRobots[roboID].Placed();
+			rCmdCtrl.controlledRobots[roboID].Placed(x, y);
 		}
 	}
 
